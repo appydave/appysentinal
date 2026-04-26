@@ -1,0 +1,66 @@
+{
+  "meta": {
+    "id": "what-is-appysentinel",
+    "version": "1.0.0",
+    "extracted": "2026-04-26",
+    "last_updated": "2026-04-26",
+    "prompt": "Initial creation — orientation intro view for documentation workspace"
+  },
+  "title": "What is AppySentinel?",
+  "subtitle": "A boilerplate for always-on local data coordinators",
+  "definition": "AppySentinel is a single-host, observer-only, always-on local data coordinator boilerplate. A Sentinel runs on one host — collecting data from local sources and from remote machines via collectors, normalising it into a common envelope, exposing it for queries, and delivering it outward to downstream systems.",
+  "core_rules": [
+    {
+      "rule": "Headless",
+      "detail": "No UI. Visualisation is a separate Viewer application that consumes the Sentinel through its expose surface. Conflating data coordination with visualisation is the failure mode AppySentinel exists to prevent."
+    },
+    {
+      "rule": "Observer-only",
+      "detail": "Sentinels read, never mutate the systems they observe. They are first in the boot sequence and last to shut down."
+    },
+    {
+      "rule": "Standalone",
+      "detail": "No dashboard or central system is required for a Sentinel to function. It runs and collects whether or not anything is listening."
+    },
+    {
+      "rule": "Single-host",
+      "detail": "A Sentinel runs on one host. It can collect data from remote machines via SSH, HTTP, and other protocols — it does not need to be installed on every machine it observes. One Sentinel per machine is an option, not a requirement."
+    }
+  ],
+  "three_umbrellas": [
+    {
+      "name": "Collect",
+      "direction": "inbound",
+      "description": "Read data from the outside world — SSH poll, file watch, HTTP poll, SQL diff, subprocess wrap, webhook receiver.",
+      "colour_hint": "blue"
+    },
+    {
+      "name": "Expose",
+      "direction": "bidirectional",
+      "description": "Let the outside world read what the Sentinel knows — via API (HTTP/Hono), CLI (pipe-friendly), or MCP (AI-agent native).",
+      "colour_hint": "green"
+    },
+    {
+      "name": "Deliver",
+      "direction": "outbound",
+      "description": "Push data outward to downstream systems — HTTP push, file relay, Supabase, OTLP, Socket.io.",
+      "colour_hint": "orange"
+    }
+  ],
+  "vs_appystack": {
+    "appystack": "Builds web apps — React + Vite + Express + TypeScript + Socket.io (RVETS). Has a UI by definition.",
+    "appysentinel": "Builds always-on local data coordinators — headless, long-running, lightweight. Viewer apps that visualise Sentinel data are built separately, typically on AppyStack."
+  },
+  "v1_pilots": [
+    {
+      "name": "AppyRadar Sentinel",
+      "description": "Fleet dashboard data half — SSH-polls 5 machines, zero remote footprint. Proves the orchestrator-ssh + snapshot-store pattern.",
+      "path": "~/dev/ad/apps/appyradar-sentinal"
+    },
+    {
+      "name": "SS Data Query Sentinel",
+      "description": "SupportSignal DB mirror — polls Supabase by updated_at watermark, exposes local mirror via MCP for AI agents. Proves the sql-diff-collector + mcp-expose pattern.",
+      "path": "~/dev/clients/supportsignal/sentinal.supportsignal"
+    }
+  ]
+}

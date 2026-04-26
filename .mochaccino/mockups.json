@@ -1,0 +1,50 @@
+{
+  "workspace": "documentation",
+  "updated": "2026-04-26",
+  "designs": [
+    {
+      "id": "01-what-is-appysentinel",
+      "title": "What is AppySentinel",
+      "slug": "what-is-appysentinel",
+      "workspace": "documentation",
+      "shape": "intro",
+      "status": "planned",
+      "data": "documentation/data/what-is-appysentinel.json",
+      "view": "documentation/designs/01-what-is-appysentinel/index.html",
+      "description": "Orientation page — headless rule, three umbrellas, two pilots. First thing a new reader sees."
+    },
+    {
+      "id": "02-architecture-overview",
+      "title": "Architecture Overview",
+      "slug": "architecture-overview",
+      "workspace": "documentation",
+      "shape": "layer-stack",
+      "status": "planned",
+      "data": "documentation/data/architecture-overview.json",
+      "view": "documentation/designs/02-architecture-overview/index.html",
+      "description": "Foundation primitives → Collect/Expose/Deliver umbrellas → Operational layer. Shows system composition."
+    },
+    {
+      "id": "03-pattern-capability-matrix",
+      "title": "Pattern Capability Matrix",
+      "slug": "pattern-capability-matrix",
+      "workspace": "documentation",
+      "shape": "matrix",
+      "status": "planned",
+      "data": "documentation/data/pattern-capability-matrix.json",
+      "view": "documentation/designs/03-pattern-capability-matrix/index.html",
+      "description": "Pattern × app grid with status indicators (baked / recipe / future / out-of-scope)."
+    },
+    {
+      "id": "04-recipe-catalog",
+      "title": "Recipe Catalog",
+      "slug": "recipe-catalog",
+      "workspace": "documentation",
+      "shape": "card-grid",
+      "status": "planned",
+      "data": "documentation/data/recipe-catalog.json",
+      "view": "documentation/designs/04-recipe-catalog/index.html",
+      "description": "One card per recipe — name, umbrella, status, what it solves, which pilot uses it."
+    }
+  ]
+}

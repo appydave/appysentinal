@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AppySentinel — Architecture Overview</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@200..700&family=Roboto:ital,wght@0,100..900;1,100..900&family=Roboto+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --brand-brown:        #342d2d;
+      --brand-gold:         #ccba9d;
+      --brand-yellow:       #ffde59;
+      --brand-amber:        #c8841a;
+      --brand-muted:        #7a6e5e;
+      --brand-near-white:   #faf5ec;
+      --brand-surface:      #f0ebe4;
+      --brand-linen:        #e8e0d4;
+      --brand-border:       #d4cdc4;
+      --brand-chrome:       #1a1515;
+      --brand-dark-surface: #25201e;
+      --brand-blue:         #2E91FC;
+
+      --layer-foundation: #342d2d;
+      --layer-collect:    #1a5fa0;
+      --layer-internal:   #5a4a3a;
+      --layer-expose:     #2a7a5a;
+      --layer-deliver:    #a05a1a;
+      --layer-ops:        #4a3d6e;
+
+      --collect-bg:    #eaf2fc;
+      --internal-bg:   #f4f0eb;
+      --expose-bg:     #e6f5ee;
+      --deliver-bg:    #fdf0dc;
+      --ops-bg:        #f0edf9;
+      --foundation-bg: #e8e4df;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: var(--brand-near-white);
+      color: var(--brand-brown);
+      line-height: 1.6;
+    }
+
+    .mocha-banner {
+      background: var(--brand-chrome);
+      color: var(--brand-gold);
+      font-family: 'Roboto Mono', monospace;
+      font-size: 11px;
+      padding: 7px 32px;
+      letter-spacing: 0.1em;
+    }
+
+    .container {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 0 40px;
+    }
+
+    /* Header */
+    .page-header {
+      padding: 56px 0 44px;
+      border-bottom: 2px solid var(--brand-linen);
+    }
+
+    .eyebrow {
+      font-family: 'Oswald', sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--brand-amber);
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 700;
+      font-size: clamp(34px, 4.5vw, 52px);
+      line-height: 1.0;
+      text-transform: uppercase;
+      color: var(--brand-brown);
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      font-size: 15px;
+      color: var(--brand-muted);
+      font-weight: 300;
+    }
+
+    /* Layer stack */
+    .layer-stack {
+      padding: 52px 0;
+    }
+
+    .layer {
+      margin-bottom: 3px;
+    }
+
+    .layer-header {
+      display: flex;
+      align-items: stretch;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .layer-stripe {
+      width: 6px;
+      flex-shrink: 0;
+    }
+
+    .layer-title-bar {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+    }
+
+    .layer-label {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 600;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .layer-item-count {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 11px;
+      color: var(--brand-muted);
+    }
+
+    .layer-chevron {
+      font-size: 12px;
+      color: var(--brand-muted);
+      margin-left: 12px;
+      transition: transform 0.2s ease;
+    }
+
+    .layer.open .layer-chevron { transform: rotate(180deg); }
+
+    .layer-body {
+      display: none;
+      padding: 0 0 4px 6px;
+    }
+
+    .layer.open .layer-body { display: block; }
+
+    .items-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1px;
+      background: var(--brand-border);
+    }
+
+    .item-card {
+      background: var(--brand-near-white);
+      padding: 18px 20px;
+    }
+
+    .item-name {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 600;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+    }
+
+    .item-code {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 10px;
+      color: var(--brand-muted);
+      margin-bottom: 6px;
+    }
+
+    .item-desc {
+      font-size: 12.5px;
+      color: var(--brand-muted);
+      line-height: 1.55;
+    }
+
+    /* Layer-specific colours */
+    .layer-foundation .layer-stripe { background: var(--layer-foundation); }
+    .layer-foundation .layer-title-bar { background: var(--foundation-bg); }
+    .layer-foundation .layer-label { color: var(--layer-foundation); }
+    .layer-foundation .item-name { color: var(--layer-foundation); }
+
+    .layer-collect .layer-stripe { background: var(--layer-collect); }
+    .layer-collect .layer-title-bar { background: var(--collect-bg); }
+    .layer-collect .layer-label { color: var(--layer-collect); }
+    .layer-collect .item-name { color: var(--layer-collect); }
+
+    .layer-internal .layer-stripe { background: var(--layer-internal); }
+    .layer-internal .layer-title-bar { background: var(--internal-bg); }
+    .layer-internal .layer-label { color: var(--layer-internal); }
+    .layer-internal .item-name { color: var(--layer-internal); }
+
+    .layer-expose .layer-stripe { background: var(--layer-expose); }
+    .layer-expose .layer-title-bar { background: var(--expose-bg); }
+    .layer-expose .layer-label { color: var(--layer-expose); }
+    .layer-expose .item-name { color: var(--layer-expose); }
+
+    .layer-deliver .layer-stripe { background: var(--layer-deliver); }
+    .layer-deliver .layer-title-bar { background: var(--deliver-bg); }
+    .layer-deliver .layer-label { color: var(--layer-deliver); }
+    .layer-deliver .item-name { color: var(--layer-deliver); }
+
+    .layer-ops .layer-stripe { background: var(--layer-ops); }
+    .layer-ops .layer-title-bar { background: var(--ops-bg); }
+    .layer-ops .layer-label { color: var(--layer-ops); }
+    .layer-ops .item-name { color: var(--layer-ops); }
+
+    /* Foundation items: baked badge */
+    .badge-baked {
+      display: inline-block;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: var(--brand-yellow);
+      color: var(--brand-brown);
+      padding: 1px 6px;
+      margin-bottom: 6px;
+    }
+
+    /* Legend */
+    .legend {
+      display: flex;
+      gap: 20px;
+      padding: 16px 0 40px;
+      border-bottom: 1px solid var(--brand-linen);
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--brand-muted);
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      flex-shrink: 0;
+    }
+
+    /* Footer */
+    .page-footer {
+      padding: 28px 0 40px;
+    }
+
+    .footer-note {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 10.5px;
+      color: var(--brand-border);
+      text-align: center;
+      letter-spacing: 0.08em;
+    }
+
+    .github-link {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 11px;
+      color: var(--brand-muted);
+      text-decoration: none;
+      border-bottom: 1px solid var(--brand-border);
+      padding-bottom: 1px;
+    }
+    .github-link:hover { color: var(--brand-brown); border-color: var(--brand-brown); }
+
+    .loading {
+      text-align: center;
+      padding: 120px 40px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 13px;
+      color: var(--brand-muted);
+    }
+  </style>
+</head>
+<body>
+
+<div class="mocha-banner">Mocha — Architecture Overview — 2026-04-26</div>
+
+<div id="app"><div class="loading">Loading…</div></div>
+
+<script>
+fetch('../../data/02-architecture-overview.json')
+  .then(r => r.json())
+  .then(render)
+  .catch(e => {
+    document.getElementById('app').innerHTML =
+      `<div class="loading">Could not load data: ${e.message}</div>`;
+  });
+
+const layerClass = {
+  foundation: 'layer-foundation',
+  collect:    'layer-collect',
+  internal:   'layer-internal',
+  expose:     'layer-expose',
+  deliver:    'layer-deliver',
+  operational:'layer-ops'
+};
+
+function renderItems(layer) {
+  const isBaked = layer.id === 'foundation';
+  return layer.items.map(item => `
+    <div class="item-card">
+      ${isBaked ? '<div class="badge-baked">baked in</div>' : ''}
+      <div class="item-name">${item.name}</div>
+      ${item.code ? `<div class="item-code">${item.code}</div>` : ''}
+      <div class="item-desc">${item.description}</div>
+    </div>
+  `).join('');
+}
+
+function render(d) {
+  const legendItems = [
+    { color: 'var(--layer-foundation)', label: 'Foundation — baked in (packages/core)' },
+    { color: 'var(--layer-collect)',    label: 'Collect — inbound boundary' },
+    { color: 'var(--layer-internal)',   label: 'Internal — storage & enrichment' },
+    { color: 'var(--layer-expose)',     label: 'Expose — read surface (API / CLI / MCP)' },
+    { color: 'var(--layer-deliver)',    label: 'Deliver — outbound boundary' },
+    { color: 'var(--layer-ops)',        label: 'Operational — runtime supervisors' },
+  ];
+
+  const legend = legendItems.map(l => `
+    <div class="legend-item">
+      <div class="legend-dot" style="background:${l.color}"></div>
+      <span>${l.label}</span>
+    </div>
+  `).join('');
+
+  const layers = d.layers.map(layer => {
+    const cls = layerClass[layer.id] || '';
+    return `
+      <div class="layer ${cls} open" id="layer-${layer.id}">
+        <div class="layer-header" onclick="toggleLayer('${layer.id}')">
+          <div class="layer-stripe"></div>
+          <div class="layer-title-bar">
+            <div>
+              <div class="layer-label">${layer.label}</div>
+              <div style="font-size:12px;color:var(--brand-muted);margin-top:2px;">${layer.description}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div class="layer-item-count">${layer.items.length} items</div>
+              <div class="layer-chevron">▲</div>
+            </div>
+          </div>
+        </div>
+        <div class="layer-body">
+          <div class="items-grid">${renderItems(layer)}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('app').innerHTML = `
+    <div class="container">
+      <header class="page-header">
+        <div class="eyebrow">AppySentinel · Documentation</div>
+        <h1>${d.title}</h1>
+        <div class="subtitle">${d.subtitle}</div>
+      </header>
+
+      <div class="legend">${legend}</div>
+
+      <div class="layer-stack">${layers}</div>
+
+      <div class="page-footer">
+        <div class="footer-note">
+          appysentinel · documentation workspace · 2026-04-26 &nbsp;·&nbsp;
+          <a class="github-link" href="https://github.com/appydave/appysentinal" target="_blank">github.com/appydave/appysentinal</a>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function toggleLayer(id) {
+  const el = document.getElementById('layer-' + id);
+  el.classList.toggle('open');
+}
+</script>
+</body>
+</html>

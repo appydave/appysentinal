@@ -1,0 +1,81 @@
+{
+  "description": "AppySentinel — per-machine always-on local data coordinator boilerplate (Bun workspaces monorepo)",
+  "patterns": {
+    "spec_and_docs": [
+      "docs/appysentinel-spec.md",
+      "docs/pattern-catalogue.md",
+      "docs/HANDOVER.md",
+      "docs/design-synthesis.md",
+      "CONTEXT.md",
+      "DEVELOPMENT.md"
+    ],
+    "core_primitives": [
+      "packages/core/src/**/*.ts"
+    ],
+    "core_tests": [
+      "packages/core/test/**/*.ts"
+    ],
+    "cli": [
+      "packages/cli/src/**/*.ts"
+    ],
+    "template": [
+      "packages/template/src/**/*.ts",
+      "packages/template/package.json",
+      "packages/template/.claude/**/*.md"
+    ],
+    "config_package": [
+      "packages/config/**/*"
+    ],
+    "package_manifests": [
+      "package.json",
+      "packages/*/package.json"
+    ],
+    "typescript_config": [
+      "tsconfig.json",
+      "packages/*/tsconfig.json"
+    ],
+    "workspace_info": [
+      "bun.lock",
+      ".gitignore"
+    ]
+  },
+  "context_hints": {
+    "entry_points": [
+      "packages/core/src/index.ts",
+      "packages/core/src/create-sentinel.ts",
+      "packages/template/src/main.ts",
+      "packages/cli/src/index.ts"
+    ],
+    "key_types": [
+      "packages/core/src/signal.ts",
+      "packages/core/src/bus.ts",
+      "packages/core/src/lifecycle.ts",
+      "packages/core/src/config.ts"
+    ],
+    "infrastructure_primitives": [
+      "packages/core/src/atomic-write.ts",
+      "packages/core/src/serial-queue.ts",
+      "packages/core/src/logger.ts"
+    ],
+    "install_pipeline": [
+      "packages/cli/src/scaffold.ts",
+      "packages/cli/src/prompts.ts",
+      "packages/cli/src/handoff.ts"
+    ]
+  },
+  "workspace_pattern": "bun-workspaces",
+  "packages": [
+    "packages/core",
+    "packages/config",
+    "packages/cli",
+    "packages/template"
+  ],
+  "published_packages": [
+    "@appydave/appysentinel-core",
+    "@appydave/appysentinel-config",
+    "create-appysentinel"
+  ],
+  "not_published": [
+    "@appydave/appysentinel-template"
+  ]
+}

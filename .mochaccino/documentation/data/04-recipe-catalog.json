@@ -1,0 +1,205 @@
+{
+  "meta": {
+    "id": "recipe-catalog",
+    "version": "1.0.0",
+    "extracted": "2026-04-26",
+    "last_updated": "2026-04-26",
+    "prompt": "Initial creation — card-grid recipe catalog from pattern-catalogue.md and spec §7"
+  },
+  "title": "Recipe Catalog",
+  "subtitle": "Optional capabilities installed per project — core ships none of these",
+  "intro": "Recipes are the optional layer of AppySentinel. Core ships slim (pino, ulid, zod only). Every recipe is pulled in by the install agent only when selected. A recipe owns its own dependencies.",
+  "umbrellas": ["Collect", "Expose", "Deliver", "Internal", "Operational"],
+  "status_values": ["planned", "proven-bespoke", "future"],
+  "recipes": [
+    {
+      "id": "orchestrator-ssh",
+      "name": "orchestrator-ssh",
+      "umbrella": "Collect",
+      "status": "proven-bespoke",
+      "status_label": "Proven bespoke — needs formalising",
+      "summary": "SSH multi-host orchestration via bash-over-stdin. Polls any number of remote machines without installing anything on them.",
+      "how": "Pipes bash scripts via stdin to each host: `ssh host 'bash -s' < script.sh`. Collects identity, resources, tools, git repos, running apps, and more.",
+      "deps": ["node:child_process / Bun.spawn"],
+      "pilot": "AppyRadar Sentinel",
+      "prior_art": "~/dev/ad/apps/appyradar/scripts/audit.ts (728 lines)"
+    },
+    {
+      "id": "sql-diff-collector",
+      "name": "sql-diff-collector",
+      "umbrella": "Collect",
+      "status": "planned",
+      "status_label": "Planned — new pattern, not yet in spec §7.1",
+      "summary": "Poll a database by updated_at watermark, write changed records to a local JSON mirror. Two tiers: delta sync for tables with updated_at, full-pull for tables without.",
+      "how": "Tier 1 tables: SELECT WHERE updated_at > $watermark. Tier 2 tables: full replace bounded by company_id. Writes per-entity JSON files + _manifest.json with watermarks.",
+      "deps": ["postgres / Supabase service-role client", "drizzle-orm (optional)"],
+      "pilot": "SS Data Query Sentinel",
+      "prior_art": "None — greenfield"
+    },
+    {
+      "id": "poll-command",
+      "name": "poll-command",
+      "umbrella": "Collect",
+      "status": "planned",
+      "status_label": "Planned",
+      "summary": "Run a local shell command on a configurable pulse interval. Emit the stdout as a Signal payload.",
+      "how": "Bun/Node spawn + interval timer. Configurable: command, args, interval, parse mode (raw/json/lines).",
+      "deps": ["node:child_process / Bun.spawn"],
+      "pilot": null
+    },
+    {
+      "id": "poll-http",
+      "name": "poll-http",
+      "umbrella": "Collect",
+      "status": "planned",
+      "status_label": "Planned",
+      "summary": "HTTP GET on a configurable pulse interval. Emit the response as a Signal payload.",
+      "how": "fetch + interval timer. Configurable: url, headers, interval, parse mode.",
+      "deps": ["fetch (built-in)"],
+      "pilot": null
+    },
+    {
+      "id": "watch-directory",
+      "name": "watch-directory",
+      "umbrella": "Collect",
+      "status": "planned",
+      "status_label": "Planned — priority recipe per spec §12",
+      "summary": "Emit a Signal for each file system event (create, change, delete) in a watched directory.",
+      "how": "chokidar watcher wired to the SignalBus.",
+      "deps": ["chokidar"],
+      "pilot": null
+    },
+    {
+      "id": "hook-receiver",
+      "name": "hook-receiver",
+      "umbrella": "Collect",
+      "status": "planned",
+      "status_label": "Planned — AngelEye pattern",
+      "summary": "Inbound webhook listener. Receives POST requests and emits the body as a Signal payload.",
+      "how": "Hono route + SignalBus emit. Optional secret validation.",
+      "deps": ["hono"],
+      "pilot": "AngelEye (future pilot 3)"
+    },
+    {
+      "id": "snapshot-capture",
+      "name": "snapshot-capture",
+      "umbrella": "Collect",
+      "status": "planned",
+      "status_label": "Planned — AppyRadar pattern",
+      "summary": "Combine signals from multiple collectors into a single structured point-in-time snapshot document.",
+      "how": "Subscribes to the SignalBus, accumulates per-source results, writes the combined snapshot via atomic-write when the collection cycle completes.",
+      "deps": [],
+      "pilot": "AppyRadar Sentinel"
+    },
+    {
+      "id": "api-expose",
+      "name": "api-expose",
+      "umbrella": "Expose",
+      "status": "planned",
+      "status_label": "Planned — foundation per Anthropic API/CLI/MCP ladder",
+      "summary": "HTTP REST interface via Hono. Exposes stored data and health endpoints to browser clients and non-agent consumers.",
+      "how": "Hono on Bun.serve. Routes: GET /health, GET /signals, GET /snapshot, GET /status.",
+      "deps": ["hono"],
+      "pilot": "AppyRadar Sentinel (Baku app + hotel-live.html need this)"
+    },
+    {
+      "id": "cli-expose",
+      "name": "cli-expose",
+      "umbrella": "Expose",
+      "status": "planned",
+      "status_label": "Planned",
+      "summary": "Pipe-friendly CLI interface. Query the Sentinel from the terminal — compose with jq, grep, on-machine agent loops.",
+      "how": "Commands: sentinel status, sentinel signals [--last N], sentinel snapshot. Output: JSON or human-readable.",
+      "deps": [],
+      "pilot": null
+    },
+    {
+      "id": "mcp-expose",
+      "name": "mcp-expose",
+      "umbrella": "Expose",
+      "status": "planned",
+      "status_label": "Planned — default surface for AI agent consumers",
+      "summary": "MCP server. Exposes Sentinel data as MCP tools that AI agents can call natively.",
+      "how": "MCP SDK server. Tools mirror the api-expose routes but shaped for agent consumption.",
+      "deps": ["@modelcontextprotocol/sdk"],
+      "pilot": "SS Data Query Sentinel (primary surface), AppyRadar Sentinel"
+    },
+    {
+      "id": "jsonl-store",
+      "name": "jsonl-store",
+      "umbrella": "Internal",
+      "status": "planned",
+      "status_label": "Planned — default for event streams",
+      "summary": "Append-only JSONL file + companion index JSON. AngelEye and FliHub pattern.",
+      "how": "SerialQueue + AtomicWrite. One JSONL file per signal kind. Index JSON tracks file positions for fast tail reads.",
+      "deps": [],
+      "pilot": "SS Data Query Sentinel"
+    },
+    {
+      "id": "snapshot-store",
+      "name": "snapshot-store",
+      "umbrella": "Internal",
+      "status": "planned",
+      "status_label": "Planned — not yet distinct from jsonl-store in spec §7.2",
+      "summary": "Single overwriting JSON file via atomic-write. AppyRadar pattern — the whole state is one document.",
+      "how": "AtomicWrite on each collection cycle. Fast reads (single JSON.parse), no compaction needed.",
+      "deps": [],
+      "pilot": "AppyRadar Sentinel"
+    },
+    {
+      "id": "event-normaliser",
+      "name": "event-normaliser",
+      "umbrella": "Internal",
+      "status": "planned",
+      "status_label": "Planned — priority recipe per spec §12",
+      "summary": "Canonical Signal envelope normalisation. Ensures all emitted Signals conform to the full envelope schema before storage or delivery.",
+      "how": "Middleware on the SignalBus. Zod validation + defaults injection (machine, sentinel_id, schema_version).",
+      "deps": ["zod (already in core)"],
+      "pilot": null
+    },
+    {
+      "id": "http-push",
+      "name": "http-push",
+      "umbrella": "Deliver",
+      "status": "planned",
+      "status_label": "Planned",
+      "summary": "Batched HTTP POST of signals to a remote endpoint. Retry with exponential backoff.",
+      "how": "Queue + batch collector + fetch with retry logic. Configurable: endpoint, batch size, interval, auth header.",
+      "deps": ["fetch (built-in)"],
+      "pilot": null
+    },
+    {
+      "id": "supabase-push",
+      "name": "supabase-push",
+      "umbrella": "Deliver",
+      "status": "planned",
+      "status_label": "Planned",
+      "summary": "Push signals to a Supabase table.",
+      "how": "Supabase JS client upsert on each pulse. Configurable: table name, upsert key.",
+      "deps": ["@supabase/supabase-js"],
+      "pilot": "AppyRadar Sentinel (possible future)"
+    },
+    {
+      "id": "register-as-launchd",
+      "name": "register-as-launchd",
+      "umbrella": "Operational",
+      "status": "planned",
+      "status_label": "Planned — macOS",
+      "summary": "Register the Sentinel as a launchd service so it starts at login and restarts on crash.",
+      "how": "Generates a .plist file in ~/Library/LaunchAgents/. Provides load/unload commands.",
+      "deps": [],
+      "pilot": "AppyRadar Sentinel"
+    },
+    {
+      "id": "register-as-systemd",
+      "name": "register-as-systemd",
+      "umbrella": "Operational",
+      "status": "planned",
+      "status_label": "Planned — Linux",
+      "summary": "Register the Sentinel as a systemd user service.",
+      "how": "Generates a .service file in ~/.config/systemd/user/. Provides enable/start/stop commands.",
+      "deps": [],
+      "pilot": null
+    }
+  ]
+}

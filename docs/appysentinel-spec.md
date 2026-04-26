@@ -8,9 +8,15 @@
 
 ## 1. What AppySentinel Is
 
-AppySentinel is a **per-machine, observer-only telemetry collector boilerplate**. Each Sentinel runs on the host it observes, collects local signals (files, processes, logs, snapshots), normalises them into a common envelope, and pushes outward to zero or more consumers. It runs standalone by default — no dashboard or central system is required for it to function.
+AppySentinel is a **single-host, observer-only, always-on local data coordinator boilerplate**. A Sentinel runs on one host. It **collects** data from local sources and from remote machines via collectors like `orchestrator-ssh` — it does not need to be installed on every machine it observes. It normalises data into a common envelope, **exposes** it for queries (API / CLI / MCP), and **delivers** it outward to zero or more downstream systems. It runs standalone by default — no dashboard or central system is required for it to function.
 
-AppySentinel is **not** AppyStack. AppyStack builds web apps (RVETS: React + Vite + Express + TypeScript + Socket.io). AppySentinel builds collectors — headless, long-running, lightweight. Dashboards that visualise Sentinel data are built separately on AppyStack and are not part of this boilerplate.
+Running one Sentinel per observed machine is an option for advanced deployments, not a default requirement. The AppyRadar pilot demonstrates the simpler pattern: one Sentinel on one orchestrator host, collecting from five remote machines over SSH.
+
+Major use cases include telemetry collection, structured snapshots, database mirroring, and event capture. OpenTelemetry alignment is preserved at the Signal envelope (see §6).
+
+AppySentinel is **headless**. It has no UI. Visualisation, dashboards, and control planes are separate applications that consume a Sentinel through its expose surfaces (API / CLI / MCP). Conflating data coordination with visualisation is the failure mode AppySentinel exists to prevent.
+
+AppySentinel is **not** AppyStack. AppyStack builds web apps (RVETS: React + Vite + Express + TypeScript + Socket.io). AppySentinel builds always-on local data coordinators — headless, long-running, lightweight. Viewers that visualise Sentinel data are built separately (typically on AppyStack) and are not part of this boilerplate.
 
 ---
 
@@ -35,11 +41,11 @@ Three layers, inherited from the architecture brief but tightened by the Q1–Q8
 │  Local Clients (AI agents, dashboards, dev tools)          │
 │                  ↕ MCP / REST / Socket.io                   │
 ├─────────────────────────────────────────────────────────────┤
-│  Sentinel (per machine)                                     │
-│  • Collects local signals                                   │
+│  Sentinel (runs on one host)                                │
+│  • COLLECTS data from local sources                         │
 │  • Normalises into Signal envelope                          │
-│  • Exposes local interface (default: MCP)                   │
-│  • PUSHES telemetry outward                                 │
+│  • EXPOSES via API / CLI / MCP                              │
+│  • DELIVERS data outward                                    │
 │  • PULLS configuration inward                               │
 ├─────────────────────────────────────────────────────────────┤
 │  Central System (optional, separate app)                    │
@@ -53,7 +59,7 @@ Rules:
 - **Push for data, pull for config** — no inbound network connections required at the Sentinel.
 - **Observer-only** — Sentinels read, never mutate the systems they observe (unless explicitly opted-in via a future `mcp-tools` recipe).
 - **Single-process per Sentinel** — multi-instance coordination is out of scope for v1.
-- **One machine, one-or-more Sentinels** — each Sentinel is a discrete process with its own config and data dir.
+- **One host, one-or-more Sentinels** — each Sentinel is a discrete process with its own config and data dir. A Sentinel can collect from remote machines via collectors like `orchestrator-ssh`; it does not need to run on every machine it observes.
 
 ---
 
@@ -270,7 +276,23 @@ Recipes are **capability descriptions (markdown specs), not code templates**. Th
 
 All recipes live in `.claude/skills/recipe/` in the scaffolded project.
 
-### 7.1 Input / collector recipes (8)
+### 7.0 Three umbrellas: Collect / Expose / Deliver
+
+Recipes at a Sentinel's boundary fall under three umbrellas, named by verbs from the Sentinel's perspective:
+
+- **Collect** (§7.1) — Sentinel reads from external systems. Event-driven (webhooks, file watchers, stdin streams) or pulse-driven (HTTP polls, SQL diffs, shell commands, SSH polls). Active variant: Sentinel as MCP client calling other services.
+- **Expose** (§7.3) — Sentinel makes its data available for outside readers. Three forms following Anthropic's API/CLI/MCP framework[^1]: `api-expose`, `cli-expose`, `mcp-expose`.
+- **Deliver** (§7.4) — Sentinel pushes data outward to downstream systems. HTTP push, file relay, OTLP push, etc.
+
+**Same technology, different role.** An HTTP server is `api-expose` in one role, a webhook receiver in another. MCP is `mcp-expose` in one role, `mcp-client` in another. Role, not technology, picks the umbrella.
+
+Internal recipes (storage §7.2, enrichment §7.5) sit between the umbrellas. Operational recipes (runtime §7.6) and cross-cutting concerns (coordination §7.7, security — TBD) are orthogonal.
+
+**Recipe dependencies.** Each recipe owns its own runtime libraries. Core ships a slim baseline (`pino`, `ulid`, `zod`); transport-specific libraries (chokidar, hono, MCP SDK, etc.) are pulled into the project by the install agent only when their recipe is selected. A Sentinel that doesn't watch files does not carry chokidar.
+
+[^1]: Anthropic, *Building agents that reach production systems with MCP* (2026-04-22). <https://claude.com/blog/building-agents-that-reach-production-systems-with-mcp>. The framework: Direct API as the foundation, CLI for local-first environments, MCP for cloud-based agents — non-substitutable layers, mature integrations ship all three.
+
+### 7.1 Collect recipes (8)
 
 | Recipe | One-line spec |
 |--------|----------------|
@@ -291,15 +313,19 @@ All recipes live in `.claude/skills/recipe/` in the scaffolded project.
 | `sqlite-store` | Bun-native SQLite with schema migration on boot |
 | `memory-buffer` | in-memory ring buffer, ephemeral, configurable size |
 
-### 7.3 Interface recipes (3)
+### 7.3 Expose recipes (3)
+
+Following Anthropic's API/CLI/MCP framework (see §7.0 footnote). Mature Sentinels ship all three; new ones start with whichever surface matches the primary consumer environment.
 
 | Recipe | One-line spec |
 |--------|----------------|
-| `rest-interface` | Hono REST API with Zod request/response and auto-generated OpenAPI |
-| `mcp-interface` | MCP server exposing resources, tools, prompts (default when scaffolded) |
-| `socketio-interface` | Socket.io server for real-time subscribers |
+| `api-expose` | Hono HTTP API with Zod request/response and auto-generated OpenAPI. The foundation; reachable by any HTTP client. |
+| `cli-expose` | Shell tool that queries the local Sentinel. For local-first developer composition (pipe to jq, grep, etc.) and on-machine agent loops. |
+| `mcp-expose` | MCP server exposing resources / tools / prompts. Standardised, portable surface for AI agents and cross-client integrations. |
 
-### 7.4 Transport recipes (5)
+Real-time push to subscribers (Socket.io / SSE) is a Viewer concern. Viewers subscribe to a Sentinel via whichever surface they prefer; they may run their own real-time fan-out on top. Not part of the boilerplate's expose set.
+
+### 7.4 Deliver recipes (5)
 
 | Recipe | One-line spec |
 |--------|----------------|
@@ -415,9 +441,11 @@ The agent is responsible for:
 └─────────────────────────────────────────────┘
 ```
 
-### 8.4 Interface defaults
+### 8.4 Expose surface defaults
 
-During the interview, the agent asks which interface to wire. The suggested default is **MCP** — it matches the primary consumer profile (AI tooling, Claude, local agents). Alternatives presented: REST + Swagger, both, none (defer).
+During the interview, the agent asks which expose surface(s) to wire (see §7.3). Per Anthropic's API/CLI/MCP framework, mature Sentinels ship all three; new ones start with the surface that matches the primary consumer environment.
+
+The suggested default is **`mcp-expose`** for projects whose primary consumer is an AI agent. Local-first developer tooling starts with `cli-expose` and/or `api-expose`. The agent presents tradeoffs explicitly so the developer makes an informed choice rather than a default-driven one.
 
 ---
 
@@ -498,9 +526,8 @@ import { hookReceiver } from './recipes/hook-receiver';
 import { jsonlStore } from './recipes/jsonl-store';
 import { deterministicClassifier } from './recipes/deterministic-classifier';
 import { heuristicClassifier } from './recipes/heuristic-classifier';
-import { mcpInterface } from './recipes/mcp-interface';
-import { socketioInterface } from './recipes/socketio-interface';
-import { restInterface } from './recipes/rest-interface';
+import { mcpExpose } from './recipes/mcp-expose';
+import { apiExpose } from './recipes/api-expose';
 
 const sentinel = await createSentinel({
   name: 'angeleye',
@@ -523,10 +550,11 @@ jsonlStore(sentinel, {
   partition: (signal) => signal.attributes?.session_id ?? 'default',
 });
 
-// Interfaces
-mcpInterface(sentinel, { /* resources, tools */ });
-socketioInterface(sentinel, { port: 5051 });
-restInterface(sentinel, { port: 5051 });
+// Expose
+mcpExpose(sentinel, { /* resources, tools */ });
+apiExpose(sentinel, { port: 5051 });
+// (Real-time fan-out via Socket.io is a Viewer concern — the AngelEye dashboard
+//  subscribes to the api-expose stream and runs its own socket layer.)
 
 await sentinel.start();
 ```
@@ -546,7 +574,7 @@ import { orchestratorSSH } from './recipes/orchestrator-ssh';
 import { snapshotCapture } from './recipes/snapshot-capture';
 import { memoryBuffer } from './recipes/memory-buffer';
 import { supabasePush } from './recipes/supabase-push';
-import { mcpInterface } from './recipes/mcp-interface';
+import { mcpExpose } from './recipes/mcp-expose';
 
 const sentinel = await createSentinel({
   name: 'appyradar',
@@ -574,8 +602,8 @@ supabasePush(sentinel, {
   table: 'telemetry',
 });
 
-// Local interface
-mcpInterface(sentinel, { /* expose latest snapshot as a resource */ });
+// Local expose
+mcpExpose(sentinel, { /* expose latest snapshot as a resource */ });
 
 await sentinel.start();
 

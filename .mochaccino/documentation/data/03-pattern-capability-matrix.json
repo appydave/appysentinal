@@ -1,0 +1,107 @@
+{
+  "meta": {
+    "id": "pattern-capability-matrix",
+    "version": "1.0.0",
+    "extracted": "2026-04-26",
+    "last_updated": "2026-04-26",
+    "prompt": "Initial creation — matrix view from docs/pattern-catalogue.md"
+  },
+  "title": "Pattern Capability Matrix",
+  "subtitle": "Which patterns each app uses — and where AppySentinel still needs to grow",
+  "status_legend": [
+    { "code": "baked",        "label": "Baked in",     "description": "Implemented in packages/core/src/",          "symbol": "✅" },
+    { "code": "recipe",       "label": "Recipe",       "description": "Recipe spec planned or written",             "symbol": "🛠️" },
+    { "code": "future",       "label": "Future",       "description": "Theoretical — deferred to v2+",             "symbol": "🔮" },
+    { "code": "open",         "label": "Open",         "description": "Design decision still open",                "symbol": "❓" },
+    { "code": "out-of-scope", "label": "Out of scope", "description": "Not AppySentinel's concern",                "symbol": "⛔" }
+  ],
+  "app_legend": [
+    { "code": "uses",     "label": "Uses today",  "symbol": "✓"  },
+    { "code": "planned",  "label": "Planned",     "symbol": "🚧" },
+    { "code": "no",       "label": "No",          "symbol": "—"  },
+    { "code": "unknown",  "label": "TBD",         "symbol": "?"  }
+  ],
+  "apps": [
+    { "id": "ar-legacy",    "name": "AppyRadar (legacy)",        "note": "Reference — Sentinel + Viewer conflated" },
+    { "id": "ar-sentinel",  "name": "AppyRadar Sentinel",        "note": "Pilot 1 — SSH orchestrator + snapshot" },
+    { "id": "ss-sentinel",  "name": "SS Data Query Sentinel",    "note": "Pilot 2 — SQL diff + MCP expose" },
+    { "id": "ae-legacy",    "name": "AngelEye (legacy)",         "note": "Reference — deferred pilot 3" }
+  ],
+  "sections": [
+    {
+      "id": "foundation",
+      "label": "Foundation / Lifecycle",
+      "patterns": [
+        { "id": "F1", "name": "Always-on loop",           "sentinel_support": "baked",   "apps": { "ar-legacy": "no", "ar-sentinel": "planned", "ss-sentinel": "planned", "ae-legacy": "uses" } },
+        { "id": "F2", "name": "Headless / no UI",         "sentinel_support": "baked",   "apps": { "ar-legacy": "no", "ar-sentinel": "planned", "ss-sentinel": "planned", "ae-legacy": "no" } },
+        { "id": "F3", "name": "Sentinel/Viewer split",    "sentinel_support": "open",    "apps": { "ar-legacy": "no", "ar-sentinel": "planned", "ss-sentinel": "planned", "ae-legacy": "no" } },
+        { "id": "F4", "name": "Signal envelope (OTel)",   "sentinel_support": "baked",   "apps": { "ar-legacy": "no", "ar-sentinel": "planned", "ss-sentinel": "planned", "ae-legacy": "no" } },
+        { "id": "F5", "name": "SignalBus (internal pub/sub)", "sentinel_support": "baked", "apps": { "ar-legacy": "no", "ar-sentinel": "planned", "ss-sentinel": "planned", "ae-legacy": "no" } },
+        { "id": "F6", "name": "Hierarchical config + reload", "sentinel_support": "baked", "apps": { "ar-legacy": "no", "ar-sentinel": "planned", "ss-sentinel": "planned", "ae-legacy": "unknown" } }
+      ]
+    },
+    {
+      "id": "collect",
+      "label": "Collect",
+      "patterns": [
+        { "id": "C2", "name": "SSH multi-host poll",      "sentinel_support": "recipe",  "apps": { "ar-legacy": "uses", "ar-sentinel": "planned", "ss-sentinel": "no", "ae-legacy": "no" } },
+        { "id": "C3", "name": "SQL diff mirror",          "sentinel_support": "recipe",  "apps": { "ar-legacy": "no", "ar-sentinel": "no", "ss-sentinel": "planned", "ae-legacy": "no" }, "note": "New — not yet in spec §7.1" },
+        { "id": "C4", "name": "File watch",               "sentinel_support": "recipe",  "apps": { "ar-legacy": "no", "ar-sentinel": "no", "ss-sentinel": "unknown", "ae-legacy": "unknown" } },
+        { "id": "C5", "name": "Webhook receiver",         "sentinel_support": "recipe",  "apps": { "ar-legacy": "no", "ar-sentinel": "no", "ss-sentinel": "no", "ae-legacy": "uses" } },
+        { "id": "C8", "name": "Active MCP client",        "sentinel_support": "future",  "apps": { "ar-legacy": "no", "ar-sentinel": "no", "ss-sentinel": "no", "ae-legacy": "no" } },
+        { "id": "C9", "name": "Snapshot capture",         "sentinel_support": "recipe",  "apps": { "ar-legacy": "uses", "ar-sentinel": "planned", "ss-sentinel": "planned", "ae-legacy": "no" } }
+      ]
+    },
+    {
+      "id": "expose",
+      "label": "Expose",
+      "patterns": [
+        { "id": "E1", "name": "API expose (HTTP/Hono)",   "sentinel_support": "recipe",  "apps": { "ar-legacy": "no", "ar-sentinel": "planned", "ss-sentinel": "planned", "ae-legacy": "uses" } },
+        { "id": "E2", "name": "CLI expose",               "sentinel_support": "recipe",  "apps": { "ar-legacy": "no", "ar-sentinel": "unknown", "ss-sentinel": "unknown", "ae-legacy": "no" } },
+        { "id": "E3", "name": "MCP expose",               "sentinel_support": "recipe",  "apps": { "ar-legacy": "no", "ar-sentinel": "planned", "ss-sentinel": "planned", "ae-legacy": "unknown" } }
+      ]
+    },
+    {
+      "id": "deliver",
+      "label": "Deliver",
+      "patterns": [
+        { "id": "D1", "name": "HTTP push",                "sentinel_support": "recipe",  "apps": { "ar-legacy": "no", "ar-sentinel": "no", "ss-sentinel": "no", "ae-legacy": "no" } },
+        { "id": "D3", "name": "Supabase push",            "sentinel_support": "recipe",  "apps": { "ar-legacy": "no", "ar-sentinel": "unknown", "ss-sentinel": "no", "ae-legacy": "no" } },
+        { "id": "D6", "name": "Multi-Sentinel push-to-central", "sentinel_support": "future", "apps": { "ar-legacy": "no", "ar-sentinel": "no", "ss-sentinel": "no", "ae-legacy": "no" } }
+      ]
+    },
+    {
+      "id": "internal",
+      "label": "Internal Storage",
+      "patterns": [
+        { "id": "I1", "name": "JSONL store",              "sentinel_support": "recipe",  "apps": { "ar-legacy": "no", "ar-sentinel": "unknown", "ss-sentinel": "planned", "ae-legacy": "uses" } },
+        { "id": "I2", "name": "Snapshot JSON store",      "sentinel_support": "recipe",  "apps": { "ar-legacy": "uses", "ar-sentinel": "planned", "ss-sentinel": "no", "ae-legacy": "no" }, "note": "Not yet distinct from jsonl-store in spec §7.2" },
+        { "id": "I4", "name": "SQL store (non-default)",  "sentinel_support": "recipe",  "apps": { "ar-legacy": "no", "ar-sentinel": "no", "ss-sentinel": "unknown", "ae-legacy": "unknown" } },
+        { "id": "I5", "name": "Atomic write",             "sentinel_support": "baked",   "apps": { "ar-legacy": "no", "ar-sentinel": "planned", "ss-sentinel": "planned", "ae-legacy": "uses" } },
+        { "id": "I11","name": "Event normaliser",         "sentinel_support": "recipe",  "apps": { "ar-legacy": "no", "ar-sentinel": "planned", "ss-sentinel": "planned", "ae-legacy": "unknown" } }
+      ]
+    },
+    {
+      "id": "operational",
+      "label": "Operational",
+      "patterns": [
+        { "id": "O1", "name": "launchd service (macOS)",  "sentinel_support": "recipe",  "apps": { "ar-legacy": "no", "ar-sentinel": "planned", "ss-sentinel": "unknown", "ae-legacy": "unknown" } }
+      ]
+    },
+    {
+      "id": "security",
+      "label": "Security",
+      "patterns": [
+        { "id": "X4", "name": "Localhost-bind (Tier 0)",  "sentinel_support": "open",    "apps": { "ar-legacy": "no", "ar-sentinel": "planned", "ss-sentinel": "planned", "ae-legacy": "unknown" } },
+        { "id": "X5", "name": "Bearer token (Tier 1)",    "sentinel_support": "open",    "apps": { "ar-legacy": "no", "ar-sentinel": "unknown", "ss-sentinel": "unknown", "ae-legacy": "no" } }
+      ]
+    }
+  ],
+  "gap_summary": [
+    { "priority": 1, "gap": "orchestrator-ssh recipe",    "blocks": "AppyRadar Sentinel pilot" },
+    { "priority": 2, "gap": "sql-diff-collector recipe",  "blocks": "SS Sentinel pilot — new pattern, not yet in spec §7.1" },
+    { "priority": 3, "gap": "snapshot-store recipe",      "blocks": "AppyRadar pattern — not yet distinct from jsonl-store in spec §7.2" },
+    { "priority": 4, "gap": "mcp-expose recipe",          "blocks": "Both pilots want this" },
+    { "priority": 5, "gap": "api-expose recipe",          "blocks": "AppyRadar Sentinel → Baku app + hotel-live.html consumers" }
+  ]
+}
