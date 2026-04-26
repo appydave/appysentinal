@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AppySentinel — Pattern Capability Matrix</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@200..700&family=Roboto:ital,wght@0,100..900;1,100..900&family=Roboto+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --brand-brown:        #342d2d;
+      --brand-gold:         #ccba9d;
+      --brand-yellow:       #ffde59;
+      --brand-amber:        #c8841a;
+      --brand-muted:        #7a6e5e;
+      --brand-near-white:   #faf5ec;
+      --brand-surface:      #f0ebe4;
+      --brand-linen:        #e8e0d4;
+      --brand-border:       #d4cdc4;
+      --brand-chrome:       #1a1515;
+      --brand-dark-surface: #25201e;
+
+      --status-baked:   #2a7a5a;
+      --status-recipe:  #1a6eb5;
+      --status-future:  #7a6e5e;
+      --status-open:    #c8841a;
+      --status-oos:     #d4cdc4;
+
+      --app-uses:    #2a7a5a;
+      --app-planned: #1a6eb5;
+      --app-no:      #e8e0d4;
+      --app-unknown: #c8841a;
+
+      --section-foundation: #342d2d;
+      --section-collect:    #1a5fa0;
+      --section-expose:     #2a7a5a;
+      --section-deliver:    #a05a1a;
+      --section-internal:   #5a4a3a;
+      --section-ops:        #4a3d6e;
+      --section-security:   #7a3a3a;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: var(--brand-near-white);
+      color: var(--brand-brown);
+    }
+
+    .mocha-banner {
+      background: var(--brand-chrome);
+      color: var(--brand-gold);
+      font-family: 'Roboto Mono', monospace;
+      font-size: 11px;
+      padding: 7px 32px;
+      letter-spacing: 0.1em;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 32px;
+    }
+
+    .page-header {
+      padding: 52px 0 36px;
+      border-bottom: 2px solid var(--brand-linen);
+    }
+
+    .eyebrow {
+      font-family: 'Oswald', sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--brand-amber);
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 700;
+      font-size: clamp(28px, 4vw, 46px);
+      text-transform: uppercase;
+      color: var(--brand-brown);
+      line-height: 1.0;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: var(--brand-muted);
+      font-weight: 300;
+    }
+
+    /* Legend row */
+    .legend-row {
+      display: flex;
+      gap: 32px;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--brand-linen);
+      flex-wrap: wrap;
+    }
+
+    .legend-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .legend-group-label {
+      font-family: 'Oswald', sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--brand-muted);
+      margin-bottom: 2px;
+    }
+
+    .legend-items {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      color: var(--brand-muted);
+    }
+
+    .legend-pip {
+      width: 16px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+
+    /* Matrix table */
+    .matrix-section {
+      margin-top: 32px;
+      margin-bottom: 4px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0 8px;
+      border-bottom: 2px solid currentColor;
+      margin-bottom: 0;
+    }
+
+    .section-stripe {
+      width: 4px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    .section-name {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 600;
+      font-size: 12px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .matrix-table th {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 500;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--brand-muted);
+      padding: 8px 10px;
+      text-align: center;
+      border-bottom: 1px solid var(--brand-border);
+      white-space: nowrap;
+    }
+
+    .matrix-table th.pattern-col {
+      text-align: left;
+      width: 40%;
+    }
+
+    .matrix-table td {
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--brand-linen);
+      font-size: 12.5px;
+      vertical-align: middle;
+    }
+
+    .matrix-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .matrix-table tr:hover td {
+      background: var(--brand-surface);
+    }
+
+    .pattern-id {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 10px;
+      color: var(--brand-muted);
+      margin-right: 6px;
+    }
+
+    .pattern-name {
+      color: var(--brand-brown);
+    }
+
+    .sentinel-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 10px;
+      padding: 2px 7px;
+      letter-spacing: 0.06em;
+    }
+
+    .sentinel-status.baked  { background: #e6f5ee; color: var(--status-baked); }
+    .sentinel-status.recipe { background: #eaf2fc; color: var(--status-recipe); }
+    .sentinel-status.future { background: var(--brand-linen); color: var(--status-future); }
+    .sentinel-status.open   { background: #fdf0dc; color: var(--status-open); }
+    .sentinel-status.out-of-scope { background: var(--brand-linen); color: var(--brand-border); }
+
+    .app-cell {
+      text-align: center;
+      font-size: 16px;
+    }
+
+    .app-cell.uses    { color: var(--app-uses); }
+    .app-cell.planned { color: var(--app-planned); }
+    .app-cell.no      { color: var(--app-no); }
+    .app-cell.unknown { color: var(--app-unknown); }
+
+    .pattern-note {
+      font-size: 10.5px;
+      color: var(--brand-amber);
+      font-style: italic;
+      margin-top: 2px;
+    }
+
+    /* Gap summary */
+    .gap-section {
+      margin-top: 40px;
+      padding: 28px;
+      background: var(--brand-surface);
+      border-top: 3px solid var(--brand-amber);
+    }
+
+    .gap-section-label {
+      font-family: 'Oswald', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--brand-amber);
+      margin-bottom: 16px;
+    }
+
+    .gap-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .gap-item {
+      display: grid;
+      grid-template-columns: 24px 1fr;
+      gap: 10px;
+      align-items: start;
+    }
+
+    .gap-priority {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      color: var(--brand-amber);
+      line-height: 1.1;
+    }
+
+    .gap-text strong {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 12px;
+      color: var(--brand-brown);
+    }
+
+    .gap-text span {
+      font-size: 12px;
+      color: var(--brand-muted);
+    }
+
+    /* Footer */
+    .page-footer {
+      padding: 28px 0 40px;
+      margin-top: 40px;
+      border-top: 1px solid var(--brand-linen);
+    }
+
+    .footer-note {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 10.5px;
+      color: var(--brand-border);
+      text-align: center;
+      letter-spacing: 0.08em;
+    }
+
+    .github-link {
+      color: var(--brand-muted);
+      text-decoration: none;
+      border-bottom: 1px solid var(--brand-border);
+      padding-bottom: 1px;
+    }
+    .github-link:hover { color: var(--brand-brown); }
+
+    .loading {
+      text-align: center;
+      padding: 120px 40px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 13px;
+      color: var(--brand-muted);
+    }
+  </style>
+</head>
+<body>
+
+<div class="mocha-banner">Mocha — Pattern Capability Matrix — 2026-04-26</div>
+<div id="app"><div class="loading">Loading…</div></div>
+
+<script>
+fetch('../../data/03-pattern-capability-matrix.json')
+  .then(r => r.json())
+  .then(render)
+  .catch(e => {
+    document.getElementById('app').innerHTML =
+      `<div class="loading">Could not load data: ${e.message}</div>`;
+  });
+
+const sectionColour = {
+  foundation: 'var(--section-foundation)',
+  collect:    'var(--section-collect)',
+  expose:     'var(--section-expose)',
+  deliver:    'var(--section-deliver)',
+  internal:   'var(--section-internal)',
+  operational:'var(--section-ops)',
+  security:   'var(--section-security)'
+};
+
+const appSymbol = {
+  uses:    '✓',
+  planned: '🚧',
+  no:      '—',
+  unknown: '?'
+};
+
+const appTitle = {
+  uses:    'Uses today',
+  planned: 'Planned',
+  no:      'Does not use',
+  unknown: 'To investigate'
+};
+
+function renderSection(section, apps) {
+  const colour = sectionColour[section.id] || 'var(--brand-muted)';
+
+  const rows = section.patterns.map(p => {
+    const statusCls = p.sentinel_support.replace(/-/g, '_').replace('out_of_scope', 'out-of-scope');
+    const appCells = apps.map(app => {
+      const val = p.apps[app.id] || 'no';
+      return `<td class="app-cell ${val}" title="${appTitle[val] || val}">${appSymbol[val] || val}</td>`;
+    }).join('');
+
+    return `
+      <tr>
+        <td>
+          <span class="pattern-id">${p.id}</span>
+          <span class="pattern-name">${p.name}</span>
+          ${p.note ? `<div class="pattern-note">⚠ ${p.note}</div>` : ''}
+        </td>
+        <td><span class="sentinel-status ${p.sentinel_support}">${p.sentinel_support}</span></td>
+        ${appCells}
+      </tr>
+    `;
+  }).join('');
+
+  const appHeaders = apps.map(a =>
+    `<th title="${a.note}">${a.name.replace(' (legacy)', '').replace(' (pilot 1)', '').replace(' (pilot 2)', '')}</th>`
+  ).join('');
+
+  return `
+    <div class="matrix-section">
+      <div class="section-header" style="color:${colour}; border-color:${colour}">
+        <div class="section-stripe" style="background:${colour}"></div>
+        <div class="section-name">${section.label}</div>
+      </div>
+      <table class="matrix-table">
+        <thead>
+          <tr>
+            <th class="pattern-col">Pattern</th>
+            <th>Sentinel</th>
+            ${appHeaders}
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function render(d) {
+  const sentinelLegend = d.status_legend.map(s =>
+    `<div class="legend-item"><div class="legend-pip">${s.symbol}</div> ${s.label}</div>`
+  ).join('');
+
+  const appLegend = d.app_legend.map(a =>
+    `<div class="legend-item"><div class="legend-pip" style="font-size:14px">${a.symbol}</div> ${a.label}</div>`
+  ).join('');
+
+  const sections = d.sections.map(s => renderSection(s, d.apps)).join('');
+
+  const gaps = d.gap_summary.map(g => `
+    <li class="gap-item">
+      <div class="gap-priority">${g.priority}</div>
+      <div class="gap-text">
+        <strong>${g.gap}</strong><br>
+        <span>${g.blocks}</span>
+      </div>
+    </li>
+  `).join('');
+
+  const appColNotes = d.apps.map(a =>
+    `<div style="font-size:11px;color:var(--brand-muted);margin-bottom:4px;"><strong style="font-family:'Roboto Mono',monospace;font-size:10px;">${a.name.replace(' (legacy)', '').replace(' (pilot 1)', '').replace(' (pilot 2)', '')}</strong> — ${a.note}</div>`
+  ).join('');
+
+  document.getElementById('app').innerHTML = `
+    <div class="container">
+      <header class="page-header">
+        <div class="eyebrow">AppySentinel · Documentation</div>
+        <h1>${d.title}</h1>
+        <div class="subtitle">${d.subtitle}</div>
+      </header>
+
+      <div style="padding:16px 0 4px;font-size:12px;color:var(--brand-muted);">${appColNotes}</div>
+
+      <div class="legend-row">
+        <div class="legend-group">
+          <div class="legend-group-label">Sentinel support</div>
+          <div class="legend-items">${sentinelLegend}</div>
+        </div>
+        <div class="legend-group">
+          <div class="legend-group-label">Per app</div>
+          <div class="legend-items">${appLegend}</div>
+        </div>
+      </div>
+
+      ${sections}
+
+      <div class="gap-section">
+        <div class="gap-section-label">Gap summary — where AppySentinel needs to grow</div>
+        <ul class="gap-list">${gaps}</ul>
+      </div>
+
+      <div class="page-footer">
+        <div class="footer-note">
+          appysentinel · documentation workspace · 2026-04-26 &nbsp;·&nbsp;
+          <a class="github-link" href="https://github.com/appydave/appysentinal" target="_blank">github.com/appydave/appysentinal</a>
+        </div>
+      </div>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>

@@ -91,6 +91,10 @@ Rules:
 
 These are plumbing primitives — every Sentinel gets them. They are shipped as code, not recipes.
 
+**Why baked in?** Every always-on headless process faces the same seven unavoidable problems regardless of what it collects or where it delivers. If these weren't baked in, every recipe author would reinvent them — inconsistently. The seven primitives form a minimum viable foundation: a common data contract (Signal), a decoupling layer (SignalBus), a process harness (Lifecycle), safe configuration loading (ConfigLoader), crash-safe file writes (AtomicWrite), ordered concurrent I/O (SerialQueue), and structured visibility (Logger). Remove any one and either the recipes couple directly to each other, or the process becomes unsafe to run unattended.
+
+**Why not recipes?** Recipes are optional — you pick the ones your Sentinel needs. These seven are not optional. A Sentinel without graceful shutdown corrupts data on restart. A Sentinel without a shared Signal contract cannot route anything. They are the floor, not the furniture.
+
 ### 5.1 Signal envelope and payload interface
 
 TypeScript types for the common event contract. See §6 for full definition.
@@ -278,15 +282,21 @@ All recipes live in `.claude/skills/recipe/` in the scaffolded project.
 
 ### 7.0 Three umbrellas: Collect / Expose / Deliver
 
-Recipes at a Sentinel's boundary fall under three umbrellas, named by verbs from the Sentinel's perspective:
+**What is an umbrella?** An umbrella is a grouping of recipes by the direction data moves relative to the Sentinel — not by the technology used. The same HTTP server can sit under Collect (receiving a webhook) or Expose (serving a query). Role, not technology, picks the umbrella.
 
-- **Collect** (§7.1) — Sentinel reads from external systems. Event-driven (webhooks, file watchers, stdin streams) or pulse-driven (HTTP polls, SQL diffs, shell commands, SSH polls). Active variant: Sentinel as MCP client calling other services.
-- **Expose** (§7.3) — Sentinel makes its data available for outside readers. Three forms following Anthropic's API/CLI/MCP framework[^1]: `api-expose`, `cli-expose`, `mcp-expose`.
-- **Deliver** (§7.4) — Sentinel pushes data outward to downstream systems. HTTP push, file relay, OTLP push, etc.
+Think of the Sentinel standing in the middle. Data moves in three directions:
 
-**Same technology, different role.** An HTTP server is `api-expose` in one role, a webhook receiver in another. MCP is `mcp-expose` in one role, `mcp-client` in another. Role, not technology, picks the umbrella.
+- **Collect** (§7.1) — data flows *into* the Sentinel. It reaches out and pulls, or listens for things arriving. Event-driven (webhooks, file watchers, stdin streams) or pulse-driven (HTTP polls, SQL diffs, shell commands, SSH polls).
+- **Expose** (§7.3) — the Sentinel makes itself readable. Others come to it and pull what they need. Primarily local — Sentinels are not cloud services; the consumer is typically a local AI agent, developer tool, or dashboard on the same machine or tailnet. Three surfaces following Anthropic's API/CLI/MCP framework[^1]: `api-expose`, `cli-expose`, `mcp-expose`.
+- **Deliver** (§7.4) — data flows *outward* from the Sentinel. It pushes to downstream systems — a central aggregator, a dashboard, a cloud store, an OTLP collector. This is how multiple Sentinels feed a single control layer.
 
-Internal recipes (storage §7.2, enrichment §7.5) sit between the umbrellas. Operational recipes (runtime §7.6) and cross-cutting concerns (coordination §7.7, security — TBD) are orthogonal.
+**Why Expose is local-first.** Sentinels run on the host they observe. They are not internet-facing services. Expose assumes the consumer is nearby — on the same machine, or reaching over Tailscale. This is by design: a Sentinel that requires external connectivity to function is fragile in exactly the ways §2 argues against.
+
+Internal recipes (storage §7.2, enrichment §7.5) sit between the umbrellas — they process data after collection and before exposure or delivery. Operational recipes (runtime §7.6) and cross-cutting concerns (coordination §7.7, security — TBD) are orthogonal.
+
+**Open design decision — Expose as a control surface.** Expose is currently read-only by default: the Sentinel publishes data, consumers read it. Whether Expose should also accept writes (allowing a local agent or control layer to send commands or configuration to the Sentinel) is an open question. The direction: write/control capability belongs in the Expose umbrella as an opt-in, not a default. A Sentinel should never accept remote writes unless explicitly configured to do so.
+
+**Open design decision — configuration pull as a fourth direction.** The architecture (§3) lists a fourth verb: `PULLS configuration inward`. A Sentinel that is part of a multi-Sentinel fleet needs to receive its configuration from a central control layer — either pushed by the controller or pulled by the Sentinel on a schedule. This does not fit cleanly under Collect (data, not control) or Expose (outward-facing). It is currently filed under coordination recipes (§7.7, `config-pull`). Whether it warrants a fourth umbrella or remains a coordination concern is unresolved.
 
 **Recipe dependencies.** Each recipe owns its own runtime libraries. Core ships a slim baseline (`pino`, `ulid`, `zod`); transport-specific libraries (chokidar, hono, MCP SDK, etc.) are pulled into the project by the install agent only when their recipe is selected. A Sentinel that doesn't watch files does not carry chokidar.
 
@@ -307,10 +317,20 @@ Internal recipes (storage §7.2, enrichment §7.5) sit between the umbrellas. Op
 
 ### 7.2 Storage recipes (3)
 
+**Why file-based is the default.** Sentinels are designed to be droppable onto a machine without a support burden. SQL databases introduce schema migrations, installation configuration, and multi-machine sync complexity — all of which create support nightmares. A flat file can be opened and read directly; a SQLite database requires tooling. File-based storage has zero setup overhead and is trivially debuggable. SQLite is available as a non-default recipe for cases that genuinely earn it.
+
+**How to choose.** The question is: *is this data about what IS, or what HAPPENED?*
+- **Current state** (what are my 5 machines doing right now, what is the fleet's health) → `snapshot-store`. Overwrite the file each collection cycle. Readers always get the latest picture.
+- **History** (what events occurred, what changed over time) → `jsonl-store`. Append each event. The record accumulates; you can replay it or query back in time.
+- **Recent-only** (last N signals for a live health check, no persistence needed) → `memory-buffer`. High-frequency signals where history has no value.
+
+This choice maps directly to the Signal's `kind` field (§6): `snapshot` kind signals → snapshot-store; `log` and `event` kind signals → jsonl-store.
+
 | Recipe | One-line spec |
 |--------|----------------|
 | `jsonl-store` | append-only JSONL files per entity + index JSON (AngelEye / FliHub pattern) |
-| `sqlite-store` | Bun-native SQLite with schema migration on boot |
+| `snapshot-store` | single overwriting JSON file via atomic-write; full state on each cycle (AppyRadar pattern) |
+| `sqlite-store` | Bun-native SQLite with schema migration on boot — non-default, must earn its place |
 | `memory-buffer` | in-memory ring buffer, ephemeral, configurable size |
 
 ### 7.3 Expose recipes (3)

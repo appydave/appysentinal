@@ -184,6 +184,49 @@
       line-height: 1.55;
     }
 
+    .item-why {
+      display: inline-block;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      background: var(--brand-yellow);
+      color: var(--brand-brown);
+      padding: 1px 6px;
+      margin-top: 6px;
+    }
+
+    .open-decision {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: var(--brand-linen);
+      border-left: 3px solid var(--brand-amber);
+      font-size: 12px;
+      color: var(--brand-muted);
+      line-height: 1.55;
+    }
+
+    .open-decision-label {
+      font-family: 'Oswald', sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--brand-amber);
+      margin-bottom: 4px;
+    }
+
+    .storage-rule {
+      margin-bottom: 12px;
+      padding: 10px 14px;
+      background: var(--brand-surface);
+      border-left: 3px solid var(--brand-gold);
+      font-size: 12px;
+      color: var(--brand-muted);
+      font-style: italic;
+      line-height: 1.55;
+    }
+
     /* Layer-specific colours */
     .layer-foundation .layer-stripe { background: var(--layer-foundation); }
     .layer-foundation .layer-title-bar { background: var(--foundation-bg); }
@@ -315,8 +358,20 @@ function renderItems(layer) {
       <div class="item-name">${item.name}</div>
       ${item.code ? `<div class="item-code">${item.code}</div>` : ''}
       <div class="item-desc">${item.description}</div>
+      ${item.why ? `<div class="item-why">↳ ${item.why}</div>` : ''}
     </div>
   `).join('');
+}
+
+function renderLayerExtras(layer) {
+  let extras = '';
+  if (layer.storage_rule) {
+    extras += `<div class="storage-rule">${layer.storage_rule}</div>`;
+  }
+  if (layer.open_decision) {
+    extras += `<div class="open-decision"><div class="open-decision-label">Open design decision</div>${layer.open_decision}</div>`;
+  }
+  return extras;
 }
 
 function render(d) {
@@ -354,6 +409,7 @@ function render(d) {
           </div>
         </div>
         <div class="layer-body">
+          ${renderLayerExtras(layer)}
           <div class="items-grid">${renderItems(layer)}</div>
         </div>
       </div>

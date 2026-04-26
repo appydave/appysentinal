@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AppySentinel — Documentation Gallery</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@200..700&family=Roboto:ital,wght@0,100..900;1,100..900&family=Roboto Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --brand-brown:        #342d2d;
+      --brand-gold:         #ccba9d;
+      --brand-yellow:       #ffde59;
+      --brand-amber:        #c8841a;
+      --brand-muted:        #7a6e5e;
+      --brand-near-white:   #faf5ec;
+      --brand-surface:      #f0ebe4;
+      --brand-linen:        #e8e0d4;
+      --brand-border:       #d4cdc4;
+      --brand-chrome:       #1a1515;
+      --brand-dark-surface: #25201e;
+
+      /* Diagonal colour rhythm — 4 backgrounds, never adjacent repeat */
+      --card-bg-0: #faf5ec;   /* near-white */
+      --card-bg-1: #f0ebe4;   /* surface */
+      --card-bg-2: #25201e;   /* dark */
+      --card-bg-3: #e8f2fc;   /* cool blue-tint */
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: var(--brand-near-white);
+      color: var(--brand-brown);
+    }
+
+    .mocha-banner {
+      background: var(--brand-chrome);
+      color: var(--brand-gold);
+      font-family: 'Roboto Mono', monospace;
+      font-size: 11px;
+      padding: 7px 32px;
+      letter-spacing: 0.1em;
+    }
+
+    .container {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 0 40px;
+    }
+
+    .page-header {
+      padding: 52px 0 40px;
+      border-bottom: 2px solid var(--brand-linen);
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .eyebrow {
+      font-family: 'Oswald', sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--brand-amber);
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 700;
+      font-size: clamp(28px, 4vw, 44px);
+      text-transform: uppercase;
+      color: var(--brand-brown);
+      line-height: 1.0;
+    }
+
+    .header-meta {
+      text-align: right;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 11px;
+      color: var(--brand-muted);
+      line-height: 1.8;
+    }
+
+    /* Card grid */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 2px;
+      padding: 40px 0 56px;
+    }
+
+    .design-card {
+      padding: 32px 28px;
+      text-decoration: none;
+      display: block;
+      position: relative;
+      transition: opacity 0.15s;
+    }
+
+    .design-card:hover { opacity: 0.85; }
+
+    /* Diagonal colour rhythm */
+    .design-card:nth-child(4n+1) { background: var(--card-bg-0); color: var(--brand-brown); }
+    .design-card:nth-child(4n+2) { background: var(--card-bg-2); color: #f0ebe4; }
+    .design-card:nth-child(4n+3) { background: var(--card-bg-1); color: var(--brand-brown); }
+    .design-card:nth-child(4n+4) { background: var(--card-bg-3); color: var(--brand-brown); }
+
+    .card-number {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 40px;
+      line-height: 1;
+      opacity: 0.18;
+      margin-bottom: 16px;
+      letter-spacing: 0.04em;
+    }
+
+    .design-card:nth-child(4n+2) .card-number { opacity: 0.25; color: var(--brand-gold); }
+
+    .card-shape-tag {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--brand-amber);
+      margin-bottom: 8px;
+    }
+
+    .design-card:nth-child(4n+2) .card-shape-tag { color: var(--brand-gold); }
+
+    .card-title {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 700;
+      font-size: 22px;
+      text-transform: uppercase;
+      line-height: 1.1;
+      margin-bottom: 12px;
+    }
+
+    .card-desc {
+      font-size: 13px;
+      line-height: 1.6;
+      opacity: 0.75;
+      margin-bottom: 20px;
+    }
+
+    .card-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .status-active   .status-dot { background: #4caf50; }
+    .status-planned  .status-dot { background: var(--brand-border); }
+    .status-shelved  .status-dot { background: var(--brand-muted); }
+
+    .design-card:nth-child(4n+2) .status-dot { opacity: 0.7; }
+
+    .card-arrow {
+      position: absolute;
+      bottom: 28px;
+      right: 24px;
+      font-size: 18px;
+      opacity: 0.3;
+    }
+
+    /* Planned card — muted, not a link */
+    .design-card.planned {
+      pointer-events: none;
+    }
+
+    .design-card.planned .card-title { opacity: 0.55; }
+
+    /* Footer */
+    .page-footer {
+      padding: 24px 0 40px;
+      border-top: 1px solid var(--brand-linen);
+    }
+
+    .footer-note {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 10.5px;
+      color: var(--brand-border);
+      text-align: center;
+      letter-spacing: 0.08em;
+    }
+
+    .github-link {
+      color: var(--brand-muted);
+      text-decoration: none;
+      border-bottom: 1px solid var(--brand-border);
+      padding-bottom: 1px;
+    }
+    .github-link:hover { color: var(--brand-brown); border-color: var(--brand-brown); }
+
+    .loading {
+      text-align: center;
+      padding: 120px 40px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 13px;
+      color: var(--brand-muted);
+    }
+  </style>
+</head>
+<body>
+
+<div class="mocha-banner">Mocha — Documentation Gallery — 2026-04-26</div>
+
+<div id="app"><div class="loading">Loading…</div></div>
+
+<script>
+fetch('../../mockups.json')
+  .then(r => r.json())
+  .then(render)
+  .catch(e => {
+    document.getElementById('app').innerHTML =
+      `<div class="loading">Could not load manifest: ${e.message}</div>`;
+  });
+
+function render(manifest) {
+  const designs = manifest.designs;
+  const active  = designs.filter(d => d.status === 'active').length;
+  const planned = designs.filter(d => d.status === 'planned').length;
+  const shelved = designs.filter(d => d.status === 'shelved').length;
+
+  const cards = designs.map((d, i) => {
+    const num = String(i + 1).padStart(2, '0');
+    const isActive  = d.status === 'active';
+    const isShelved = d.status === 'shelved';
+
+    const statusLabel = isActive ? 'Active' : isShelved ? 'Shelved' : 'Planned';
+    // derive folder name from the view path: "documentation/designs/01-slug/index.html" → "01-slug/"
+    const folder = d.view ? d.view.replace('documentation/designs/', '').replace('/index.html', '') + '/' : '#';
+    const tag  = isActive ? 'a' : 'div';
+    const cls  = `design-card ${d.status}`;
+
+    return `
+      <${tag} class="${cls}" ${isActive ? `href="${folder}"` : ''}>
+        <div class="card-number">${num}</div>
+        <div class="card-shape-tag">${d.shape}</div>
+        <div class="card-title">${d.title}</div>
+        <div class="card-desc">${d.description}</div>
+        <div class="card-status status-${d.status}">
+          <div class="status-dot"></div>
+          ${statusLabel}
+        </div>
+        ${isActive ? '<div class="card-arrow">→</div>' : ''}
+      </${tag}>
+    `;
+  }).join('');
+
+  document.getElementById('app').innerHTML = `
+    <div class="container">
+      <header class="page-header">
+        <div>
+          <div class="eyebrow">AppySentinel · Documentation</div>
+          <h1>Design Gallery</h1>
+        </div>
+        <div class="header-meta">
+          ${active} active &nbsp;·&nbsp; ${planned} planned &nbsp;·&nbsp; ${shelved} shelved<br>
+          workspace: ${manifest.workspace}
+        </div>
+      </header>
+
+      <div class="gallery-grid">${cards}</div>
+
+      <div class="page-footer">
+        <div class="footer-note">
+          appysentinel · documentation workspace · 2026-04-26 &nbsp;·&nbsp;
+          <a class="github-link" href="https://github.com/appydave/appysentinal" target="_blank">github.com/appydave/appysentinal</a>
+        </div>
+      </div>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>

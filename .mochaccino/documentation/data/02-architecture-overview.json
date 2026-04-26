@@ -1,33 +1,36 @@
 {
   "meta": {
     "id": "architecture-overview",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "extracted": "2026-04-26",
     "last_updated": "2026-04-26",
-    "prompt": "Initial creation — layer-stack architecture view for documentation workspace"
+    "prompt": "Refresh — added WHY descriptions for foundation, umbrellas, and storage after design review session"
   },
   "title": "Architecture Overview",
-  "subtitle": "How an AppySentinel is composed",
+  "subtitle": "How an AppySentinel is composed — and why each layer exists",
   "layers": [
     {
       "id": "foundation",
       "label": "Foundation — Baked In",
-      "description": "Core primitives every Sentinel gets automatically. These are code, not recipes — they ship inside packages/core.",
+      "description": "Every always-on headless process faces the same seven unavoidable problems. These primitives solve them once, consistently, so recipe authors never have to. Remove any one and the Sentinel becomes unsafe to run unattended.",
       "items": [
         {
           "name": "Signal Envelope",
           "code": "signal.ts",
-          "description": "The atomic unit of telemetry. Common outer contract (id, ts, machine, sentinel_id, kind, name, severity, attributes) with a typed collector-specific payload. OTel-aligned."
+          "description": "Without a shared data shape, nothing can subscribe generically. This is the contract every collector emits against and every store/transport receives. OTel-aligned so signals are portable to external observability systems.",
+          "why": "Common contract"
         },
         {
           "name": "SignalBus",
           "code": "bus.ts",
-          "description": "Internal pub/sub. Collectors emit signals; stores and transports subscribe. They never couple directly to each other."
+          "description": "Without internal pub/sub, collectors would call storage and transports directly — tight coupling. Adding a new store would mean touching every collector. The bus decouples them: emit once, any number of subscribers receive.",
+          "why": "Decoupling"
         },
         {
           "name": "Lifecycle",
           "code": "lifecycle.ts",
-          "description": "Handles SIGINT/SIGTERM (graceful shutdown), SIGHUP (config reload), and health snapshots."
+          "description": "Every process receives SIGTERM eventually — OS shutdown, restart, deploy. Without structured shutdown, buffered data is lost and files may be corrupted mid-write. SIGHUP enables config reload without restart.",
+          "why": "Safe shutdown"
         },
         {
           "name": "ConfigLoader",
@@ -42,75 +45,79 @@
         {
           "name": "SerialQueue",
           "code": "serial-queue.ts",
-          "description": "Promise-chain serialisation. Non-blocking to callers; guarantees ordered I/O."
+          "description": "Multiple collectors writing concurrently to the same file will race and corrupt JSONL. The queue serialises writes without blocking callers — they enqueue and move on.",
+          "why": "Concurrent write safety"
         },
         {
           "name": "Logger",
           "code": "logger.ts",
-          "description": "Pre-configured Pino. Structured, child-logger support, env-driven level."
+          "description": "A headless process is invisible without structured logging — you cannot attach a debugger or watch its output interactively. Pre-configured means consistent log format across all recipes without each one setting up Pino differently.",
+          "why": "Visibility"
         }
       ]
     },
     {
       "id": "collect",
-      "label": "Collect — Boundary Umbrella 1",
-      "description": "Read data from outside. Inbound only. Recipes pulled in at install time — core ships none of these.",
+      "label": "Collect — data flows IN",
+      "description": "The Sentinel reaches out and grabs data, or listens for data arriving. Inbound only. The question answered: what does this Sentinel need to know about, and how does it find out?",
       "items": [
-        { "name": "poll-command", "description": "Run a local command on a pulse interval." },
-        { "name": "poll-http", "description": "HTTP GET on a pulse interval." },
-        { "name": "orchestrator-ssh", "description": "SSH multi-host poll via bash-over-stdin. Zero remote footprint." },
-        { "name": "sql-diff-collector", "description": "Poll DB by updated_at watermark. Write changed records to local JSONL mirror. (New — not yet in spec §7.1.)" },
-        { "name": "watch-directory", "description": "File system events via chokidar." },
-        { "name": "watch-logfile", "description": "Tail a log file." },
-        { "name": "hook-receiver", "description": "Inbound webhook listener." },
-        { "name": "subprocess-wrap", "description": "Supervised long-running subprocess." },
-        { "name": "snapshot-capture", "description": "Combine signals into a structured point-in-time snapshot." }
+        { "name": "poll-command", "description": "Run a local command on a pulse interval. Use when the data source is a CLI tool or script." },
+        { "name": "poll-http", "description": "HTTP GET on a pulse interval. Use when the data source is an HTTP API." },
+        { "name": "orchestrator-ssh", "description": "SSH multi-host poll via bash-over-stdin. Zero remote footprint — nothing installed on target machines. The AppyRadar pattern: one Sentinel collects from five machines." },
+        { "name": "sql-diff-collector", "description": "Poll a database by updated_at watermark, write changed records to a local JSON mirror. Use when the source is a DB and you want a local queryable copy without hitting production." },
+        { "name": "watch-directory", "description": "File system events via chokidar. Use when data arrives as files." },
+        { "name": "watch-logfile", "description": "Tail a log file with rotation detection. Use when the source writes structured or semi-structured log lines." },
+        { "name": "hook-receiver", "description": "Inbound webhook listener. Use when an external system pushes events to the Sentinel." },
+        { "name": "subprocess-wrap", "description": "Supervised long-running subprocess. Use when the data source is a process you need to own and stream output from." },
+        { "name": "snapshot-capture", "description": "Combine signals from multiple collectors into one structured document at the end of a collection cycle." }
       ]
     },
     {
       "id": "internal",
       "label": "Internal — Storage & Enrichment",
-      "description": "How the Sentinel stores and enriches data between collect and expose/deliver. File-based is the default.",
+      "description": "What happens to data after collection and before it is exposed or delivered. The core question: is this data about what IS (current state) or what HAPPENED (history)?",
+      "storage_rule": "File-based is the default. SQL introduces schema migrations, installation configuration, and multi-machine sync complexity — all support nightmares for a droppable-on-any-machine tool.",
       "items": [
-        { "name": "jsonl-store", "description": "Append-only JSONL + index JSON. Default for event streams." },
-        { "name": "snapshot-store", "description": "Single overwriting JSON via atomic-write. Default for point-in-time state (e.g. fleet snapshot)." },
-        { "name": "memory-buffer", "description": "Ephemeral ring buffer. No persistence." },
-        { "name": "sqlite-store", "description": "Non-default. Must earn its place — schema migrations and multi-machine sync are fragile." },
-        { "name": "event-normaliser", "description": "Canonical Signal envelope + payload normalisation." },
-        { "name": "classifier (tiers 1–3)", "description": "Rules-based → regex/heuristic → LLM semantic enrichment." }
+        { "name": "jsonl-store", "description": "Append-only JSONL + index JSON. Choose this when data is a history — events that accumulate over time and you may want to replay or query back through." },
+        { "name": "snapshot-store", "description": "Single overwriting JSON file, replaced each collection cycle. Choose this when data is current state — you want the latest picture, not a history." },
+        { "name": "memory-buffer", "description": "Ephemeral ring buffer, no persistence. Edge case — for high-frequency signals where only the last N records matter and history has no value." },
+        { "name": "sqlite-store", "description": "Non-default. Must earn its place per case. Justified only when query complexity cannot be served by file reads." },
+        { "name": "event-normaliser", "description": "Ensures all collected signals conform to the full Signal envelope before storage — fills in defaults, validates schema." },
+        { "name": "classifier (tiers 1–3)", "description": "Enrichment pipeline: rules-based (fast, deterministic) → regex/heuristic → LLM semantic. Each tier adds meaning to raw signals." }
       ]
     },
     {
       "id": "expose",
-      "label": "Expose — Boundary Umbrella 2",
-      "description": "Let the outside world read what the Sentinel knows. Follows Anthropic's API / CLI / MCP framework. Mature Sentinels ship all three.",
+      "label": "Expose — Sentinel is readable",
+      "description": "The Sentinel makes itself queryable. Others come to it and pull what they need. Primarily local — Sentinels are not internet-facing services. The consumer is typically a local AI agent, developer tool, or dashboard on the same machine or tailnet.",
+      "open_decision": "Expose is currently read-only by default. Whether it should also accept writes (local control surface) is an open design decision — write capability belongs in this umbrella as an opt-in, not a default.",
       "items": [
-        { "name": "api-expose", "description": "HTTP REST via Hono. Foundation — enables browser clients and non-agent consumers." },
-        { "name": "cli-expose", "description": "Pipe-friendly CLI interface. Local dev composition, on-machine agent loops." },
-        { "name": "mcp-expose", "description": "MCP server. Native surface for AI agent consumers." }
+        { "name": "api-expose", "description": "HTTP REST via Hono. The foundation surface — reachable by any HTTP client, browser, or script. Start here." },
+        { "name": "cli-expose", "description": "Pipe-friendly shell interface. For local dev composition (pipe to jq, grep) and on-machine agent loops." },
+        { "name": "mcp-expose", "description": "MCP server. Native surface for AI agent consumers. The right choice when the primary consumer is a Claude or other MCP-aware agent." }
       ]
     },
     {
       "id": "deliver",
-      "label": "Deliver — Boundary Umbrella 3",
-      "description": "Push data outward to downstream systems. Outbound only.",
+      "label": "Deliver — data flows OUT",
+      "description": "The Sentinel pushes data outward to downstream systems without being asked. Use this when data needs to reach a place the consumer cannot query directly — a central aggregator, a cloud store, an observability platform.",
       "items": [
-        { "name": "http-push", "description": "Batched HTTP push with retry and backoff." },
-        { "name": "file-relay", "description": "rsync / Syncthing / network mount." },
-        { "name": "supabase-push", "description": "Push to Supabase." },
-        { "name": "otlp-push", "description": "Translate Signal → OTLP and push to an OTel collector." },
-        { "name": "socketio-emit", "description": "Push to a remote Socket.io server. Deliver role only — Socket.io expose is a Viewer concern." }
+        { "name": "http-push", "description": "Batched HTTP POST with retry and backoff. The general-purpose outbound transport." },
+        { "name": "file-relay", "description": "rsync / Syncthing / network mount. Use when the destination is another machine on the same network or tailnet." },
+        { "name": "supabase-push", "description": "Push signals into a Supabase table. Use when a cloud-accessible store is needed." },
+        { "name": "otlp-push", "description": "Translate Signals → OTLP and push to an OTel collector. Use when integrating with existing observability infrastructure." },
+        { "name": "socketio-emit", "description": "Push to a remote Socket.io server. Deliver role only — the Sentinel is a client here, not a server." }
       ]
     },
     {
       "id": "operational",
-      "label": "Operational — Runtime Supervisors",
-      "description": "How the Sentinel runs as a managed process on the host machine.",
+      "label": "Operational — Always-on supervision",
+      "description": "A Sentinel is only useful if it keeps running. These recipes register the Sentinel as a managed process so it starts at boot, restarts on crash, and can be controlled by the host OS.",
       "items": [
-        { "name": "register-as-launchd", "description": "macOS launchd plist." },
-        { "name": "register-as-systemd", "description": "Linux systemd unit." },
-        { "name": "register-as-pm2", "description": "PM2 process." },
-        { "name": "register-as-docker", "description": "Docker container." }
+        { "name": "register-as-launchd", "description": "macOS launchd plist. The right choice for all machines in the AppyDave fleet." },
+        { "name": "register-as-systemd", "description": "Linux systemd user service. For Linux servers and remote machines." },
+        { "name": "register-as-pm2", "description": "PM2 ecosystem file. Cross-platform fallback when OS-native supervision isn't available." },
+        { "name": "register-as-docker", "description": "Dockerfile + compose. For containerised or cloud deployments." }
       ]
     }
   ]

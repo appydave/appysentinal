@@ -8,8 +8,8 @@
       "slug": "what-is-appysentinel",
       "workspace": "documentation",
       "shape": "intro",
-      "status": "planned",
-      "data": "documentation/data/what-is-appysentinel.json",
+      "status": "active",
+      "data": "documentation/data/01-what-is-appysentinel.json",
       "view": "documentation/designs/01-what-is-appysentinel/index.html",
       "description": "Orientation page — headless rule, three umbrellas, two pilots. First thing a new reader sees."
     },
@@ -19,8 +19,8 @@
       "slug": "architecture-overview",
       "workspace": "documentation",
       "shape": "layer-stack",
-      "status": "planned",
-      "data": "documentation/data/architecture-overview.json",
+      "status": "active",
+      "data": "documentation/data/02-architecture-overview.json",
       "view": "documentation/designs/02-architecture-overview/index.html",
       "description": "Foundation primitives → Collect/Expose/Deliver umbrellas → Operational layer. Shows system composition."
     },
@@ -30,8 +30,8 @@
       "slug": "pattern-capability-matrix",
       "workspace": "documentation",
       "shape": "matrix",
-      "status": "planned",
-      "data": "documentation/data/pattern-capability-matrix.json",
+      "status": "active",
+      "data": "documentation/data/03-pattern-capability-matrix.json",
       "view": "documentation/designs/03-pattern-capability-matrix/index.html",
       "description": "Pattern × app grid with status indicators (baked / recipe / future / out-of-scope)."
     },
