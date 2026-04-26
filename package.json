@@ -1,0 +1,29 @@
+{
+  "name": "appysentinel",
+  "private": true,
+  "version": "0.1.0",
+  "description": "AppySentinel — per-machine, observer-only telemetry collector boilerplate",
+  "type": "module",
+  "workspaces": [
+    "packages/core",
+    "packages/config",
+    "packages/cli",
+    "packages/template"
+  ],
+  "scripts": {
+    "build": "bun run --filter './packages/core' build && bun run --filter './packages/cli' build",
+    "test": "bun run --filter '*' test",
+    "typecheck": "bun run --filter '*' typecheck",
+    "lint": "bun run --filter '*' lint"
+  },
+  "engines": {
+    "bun": ">=1.1.0",
+    "node": ">=20"
+  },
+  "author": "David Cruwys",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/appydave/appysentinal.git"
+  }
+}

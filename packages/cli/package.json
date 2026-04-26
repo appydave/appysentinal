@@ -1,0 +1,48 @@
+{
+  "name": "create-appysentinel",
+  "version": "0.1.0",
+  "description": "Scaffold AppySentinel projects — per-machine, observer-only telemetry collectors",
+  "type": "module",
+  "bin": {
+    "create-appysentinel": "./dist/index.js"
+  },
+  "files": [
+    "dist/",
+    "../template/"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && chmod +x dist/index.js || true",
+    "dev": "bun run src/index.ts",
+    "test": "echo 'cli has no automated tests yet' && exit 0",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "echo 'cli lint stub' && exit 0",
+    "prepublishOnly": "bun run build"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "appydave",
+    "appysentinel",
+    "create",
+    "scaffold",
+    "sentinel",
+    "telemetry",
+    "boilerplate"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/appydave/appysentinal.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/appydave/appysentinal#readme",
+  "author": "David Cruwys",
+  "license": "MIT"
+}
