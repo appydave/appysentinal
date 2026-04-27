@@ -75,6 +75,35 @@ Storage and enrichment sit between umbrellas — they process data after collect
 
 ---
 
+## Testing your Sentinel
+
+**Two modes — do not confuse them:**
+
+| Mode | Command | What it does |
+|------|---------|-------------|
+| **Live run** | `bun src/main.ts` | Starts the real loop. Blocks. SIGINT (Ctrl-C) to stop. Registers OS signal handlers. |
+| **Tests** | `bun run test` / `bun run test:watch` | Vitest. Does NOT run the live loop. Must start and stop the sentinel within each test. |
+
+**Rule for every test:** always pass `installSignalHandlers: false` to `createSentinel()`. Without it, the sentinel registers SIGINT/SIGTERM handlers and Vitest cannot exit cleanly.
+
+```typescript
+// src/__tests__/my-recipe.test.ts
+const sentinel = createSentinel({
+  name: 'test',
+  machine: 'test-machine',
+  installSignalHandlers: false,   // required — prevents signal handler leak in Vitest
+});
+await sentinel.start();
+// ... test assertions ...
+await sentinel.stop('manual');
+```
+
+**Watch mode while developing:** `bun run test:watch` — Vitest re-runs only tests affected by files you change. Leave it open in a terminal split while wiring recipes.
+
+**Pre-push hook (Husky):** `.husky/pre-push` runs `bun run test && bun run typecheck` automatically before every push. Fix failures — do not bypass with `--no-verify`.
+
+---
+
 ## Hard rules
 
 - **Observer-only by default** — read, never mutate the systems this Sentinel observes.
@@ -89,6 +118,8 @@ Storage and enrichment sit between umbrellas — they process data after collect
 
 ```bash
 bun src/main.ts                    # run in dev (Ctrl-C to stop)
+bun run test                       # run tests once
+bun run test:watch                 # run tests in watch mode (leave open while developing)
 bun run typecheck                  # TypeScript check
 bash scripts/install-service.sh   # register as always-on service (deploy time)
 bash scripts/uninstall-service.sh  # remove service registration

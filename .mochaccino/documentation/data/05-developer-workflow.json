@@ -1,0 +1,93 @@
+{
+  "meta": {
+    "id": "developer-workflow",
+    "version": "1.0.0",
+    "extracted": "2026-04-27",
+    "last_updated": "2026-04-27",
+    "prompt": "New view — Developer Workflow: three lifecycle moments (Scaffold/Build/Deploy), watch mode, pre-push hook, CI pipeline, publish process"
+  },
+  "title": "Developer Workflow",
+  "subtitle": "From scaffold to always-on service — three distinct moments",
+  "intro": "AppySentinel separates scaffold time, build time, and deploy time. Each moment has a clear boundary. The CLI handles Scaffold automatically. Build is iterative developer work. Deploy is a one-command registration with the host OS.",
+  "moments": [
+    {
+      "id": "scaffold",
+      "label": "Scaffold",
+      "tagline": "One command. Everything wired.",
+      "command": "npx create-appysentinel my-sentinel",
+      "description": "The CLI copies the template, substitutes project name, runs bun install and git init. No prompts for machine name — that comes from os.hostname() at runtime.",
+      "what_you_get": [
+        { "item": "src/main.ts",              "note": "Minimal walking skeleton — createSentinel + sentinel.start()" },
+        { "item": "CLAUDE.md",                "note": "AppySentinel conventions baked in — recipe pattern, Signal envelope, three umbrellas, hard rules" },
+        { "item": "scripts/install-service.sh","note": "Registers as launchd (macOS) or systemd (Linux). Detects OS automatically." },
+        { "item": "scripts/uninstall-service.sh","note": "Clean removal from the host OS service manager" },
+        { "item": "scripts/launchd.plist",    "note": "macOS template — PROJECT_NAME, PROJECT_DIR, BUN_PATH substituted at install time" },
+        { "item": "scripts/systemd.service",  "note": "Linux template — same substitution pattern" },
+        { "item": ".env.example",             "note": "MACHINE_NAME is a commented-out override. Default is os.hostname() — no action required." },
+        { "item": ".gitignore",               "note": "node_modules, dist, .env" },
+        { "item": "package.json",             "note": "Project name, bun scripts, @appydave/appysentinel-core dependency wired to published version" }
+      ],
+      "note": "After Scaffold the project is functional but unconfigured. main.ts emits one sentinel.started event then idles. Wire recipes before it does anything useful."
+    },
+    {
+      "id": "build",
+      "label": "Build / Develop",
+      "tagline": "Wire recipes. Iterate fast.",
+      "description": "The iterative development phase. Wire collectors, storage, and expose surfaces into main.ts. Use watch mode to get instant feedback.",
+      "commands": [
+        { "cmd": "bun install",                                            "purpose": "Install dependencies after scaffold or after adding a recipe dep" },
+        { "cmd": "bun src/main.ts",                                        "purpose": "Run the Sentinel directly — structured logs to stdout" },
+        { "cmd": "bun run build",                                          "purpose": "Compile TypeScript to dist/ — needed before service registration" },
+        { "cmd": "bun run test",                                           "purpose": "Run all Vitest tests (39 core + 7 CLI integration = 46 total)" },
+        { "cmd": "bun run typecheck",                                      "purpose": "TypeScript type-check across all packages" },
+        { "cmd": "bun run --filter './packages/core' test:watch",          "purpose": "Watch mode — re-runs only tests affected by changed files. Leave open while developing core." }
+      ],
+      "pre_push_hook": {
+        "tool": "Husky",
+        "command": "bun run test && bun run typecheck",
+        "trigger": "Every git push",
+        "note": "Installed via prepare script on bun install. Broken code cannot reach the remote. Do not bypass with --no-verify — fix the failure instead."
+      }
+    },
+    {
+      "id": "deploy",
+      "label": "Deploy",
+      "tagline": "Register once. Runs forever.",
+      "description": "Register the built Sentinel as a host OS service. It starts at login, restarts on crash, and runs unattended. No manual supervision.",
+      "commands": [
+        { "cmd": "bun run build",                  "purpose": "Compile to dist/ first" },
+        { "cmd": "bash scripts/install-service.sh","purpose": "Detect OS, substitute placeholders, register with launchd or systemd" },
+        { "cmd": "bash scripts/uninstall-service.sh","purpose": "Remove from host OS service manager cleanly" }
+      ],
+      "platforms": [
+        { "os": "macOS",  "tool": "launchd",  "location": "~/Library/LaunchAgents/",       "note": "Service file: com.appysentinel.<name>.plist" },
+        { "os": "Linux",  "tool": "systemd",  "location": "~/.config/systemd/user/",       "note": "User-level service — no sudo required" }
+      ]
+    }
+  ],
+  "ci_pipeline": {
+    "title": "CI / CD Pipeline",
+    "description": "GitHub Actions. Two workflows. Runs automatically — no manual steps.",
+    "workflows": [
+      {
+        "name": "CI",
+        "file": ".github/workflows/ci.yml",
+        "trigger": "Every push to main + pull requests",
+        "steps": ["bun install", "bun run build", "bun run typecheck", "bun run test"],
+        "note": "Runs on Node.js 24 (pinned action versions). Green means all 46 tests pass and types are clean."
+      },
+      {
+        "name": "Publish",
+        "file": ".github/workflows/publish.yml",
+        "trigger": "git tag v* push",
+        "steps": ["Run CI first", "Publish each package to npm — idempotent (skips if version already exists)"],
+        "note": "Requires NPM_TOKEN secret. Granular Access Token — expires ~2026-07-27. Must rotate before expiry."
+      }
+    ],
+    "published_packages": [
+      { "name": "@appydave/appysentinel-core",   "version": "0.1.0" },
+      { "name": "@appydave/appysentinel-config", "version": "0.1.0" },
+      { "name": "create-appysentinel",           "version": "0.1.6" }
+    ]
+  }
+}

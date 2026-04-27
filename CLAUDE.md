@@ -72,7 +72,7 @@ Common tasks:
 ```bash
 bun install                                       # first-time setup (also installs Husky hooks)
 bun run build                                     # build core + cli
-bun run test                                      # all package tests (Vitest)
+bun run test                                      # all package tests (Vitest) — excludes template
 bun run --filter './packages/core' test           # core tests only
 bun run --filter './packages/core' test:watch     # watch mode — leave running while developing
 bun run typecheck                                 # TypeScript across all packages
@@ -85,13 +85,18 @@ No broken code reaches the remote. If the hook blocks a push, fix the failure �
 
 **Watch mode while developing core:** `bun run --filter './packages/core' test:watch` — Vitest re-runs only tests affected by the files you change. Equivalent to Ruby's Guard. Leave it open in a terminal split.
 
+**Template is excluded from monorepo test runs.** `packages/template` has no installed `vitest` in the monorepo (its deps are only installed when it is scaffolded into a new standalone project). The root `test`/`typecheck`/`lint` scripts filter to `@appydave/*` and `create-appysentinel` explicitly. Do not change this to `--filter '*'`.
+
 ---
 
 ## Current Status (2026-04-27)
 
 - 46 Vitest tests passing (39 core, 7 CLI integration).
 - CLI scaffold pipeline works and tested against the real template with real temp dirs.
-- Template ships: CLAUDE.md, service registration scripts (launchd + systemd), .env.example.
+- Template ships: CLAUDE.md, service registration scripts (launchd + systemd), .env.example,
+  Vitest smoke test, Husky pre-push hook, `vitest.config.ts`.
+- Scaffold order fixed: `git init` now runs before `bun install` so Husky `prepare` succeeds.
+- CLI version: `0.1.7`.
 - Husky pre-push hook installed. GitHub Actions CI on push; publish on version tag.
 - **Next**: Pilot 1 (AppyRadar Sentinel) + Pilot 2 (SS Data Query Sentinel) in parallel.
   First recipe to write is whatever a pilot demands — not speculative.

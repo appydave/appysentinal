@@ -1,10 +1,10 @@
 {
   "meta": {
     "id": "architecture-overview",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "extracted": "2026-04-26",
-    "last_updated": "2026-04-26",
-    "prompt": "Refresh — added WHY descriptions for foundation, umbrellas, and storage after design review session"
+    "last_updated": "2026-04-27",
+    "prompt": "Medium refresh — foundation layer: 4 planned-but-not-yet-built additions (health probe, dataDir, PID file, self-telemetry); operational layer: launchd/systemd promoted to template artifacts, pm2/docker remain as recipes"
   },
   "title": "Architecture Overview",
   "subtitle": "How an AppySentinel is composed — and why each layer exists",
@@ -17,42 +17,75 @@
         {
           "name": "Signal Envelope",
           "code": "signal.ts",
+          "status": "baked",
           "description": "Without a shared data shape, nothing can subscribe generically. This is the contract every collector emits against and every store/transport receives. OTel-aligned so signals are portable to external observability systems.",
           "why": "Common contract"
         },
         {
           "name": "SignalBus",
           "code": "bus.ts",
+          "status": "baked",
           "description": "Without internal pub/sub, collectors would call storage and transports directly — tight coupling. Adding a new store would mean touching every collector. The bus decouples them: emit once, any number of subscribers receive.",
           "why": "Decoupling"
         },
         {
           "name": "Lifecycle",
           "code": "lifecycle.ts",
+          "status": "baked",
           "description": "Every process receives SIGTERM eventually — OS shutdown, restart, deploy. Without structured shutdown, buffered data is lost and files may be corrupted mid-write. SIGHUP enables config reload without restart.",
           "why": "Safe shutdown"
         },
         {
           "name": "ConfigLoader",
           "code": "config.ts",
+          "status": "baked",
           "description": "Hierarchical config: built-in defaults → config file → env vars. Zod-validated. Reloadable on SIGHUP."
         },
         {
           "name": "AtomicWrite",
           "code": "atomic-write.ts",
+          "status": "baked",
           "description": "Temp-file + rename pattern. Crash-safe flat-file writes."
         },
         {
           "name": "SerialQueue",
           "code": "serial-queue.ts",
+          "status": "baked",
           "description": "Multiple collectors writing concurrently to the same file will race and corrupt JSONL. The queue serialises writes without blocking callers — they enqueue and move on.",
           "why": "Concurrent write safety"
         },
         {
           "name": "Logger",
           "code": "logger.ts",
+          "status": "baked",
           "description": "A headless process is invisible without structured logging — you cannot attach a debugger or watch its output interactively. Pre-configured means consistent log format across all recipes without each one setting up Pino differently.",
           "why": "Visibility"
+        }
+      ],
+      "planned_additions": [
+        {
+          "name": "Health Probe",
+          "status": "planned",
+          "description": "GET /health baked into createSentinel(). Raw Node HTTP, no Hono. Port via HEALTH_PORT env (default 7300, 0 = disabled). Needed before pilots ship.",
+          "why": "Liveness check"
+        },
+        {
+          "name": "dataDir",
+          "status": "planned",
+          "description": "sentinel.dataDir on createSentinel() options. Default ~/.local/share/<name>/. Override via DATA_DIR env. Gives recipes a stable location without each one inventing its own.",
+          "why": "Consistent data location"
+        },
+        {
+          "name": "PID File",
+          "status": "planned",
+          "description": "Written to dataDir on start, removed on clean stop. Prevents double-start when launchd restarts a slow-shutting process.",
+          "why": "Double-start prevention"
+        },
+        {
+          "name": "Self-Telemetry",
+          "status": "planned",
+          "description": "Metric signal every 60s: uptime, signals_emitted, errors_caught, bus_subscribers, memory_mb. Baked into createSentinel — gives every Sentinel free observability of itself.",
+          "why": "Self-observability"
         }
       ]
     },
@@ -112,12 +145,28 @@
     {
       "id": "operational",
       "label": "Operational — Always-on supervision",
-      "description": "A Sentinel is only useful if it keeps running. These recipes register the Sentinel as a managed process so it starts at boot, restarts on crash, and can be controlled by the host OS.",
+      "description": "A Sentinel is only useful if it keeps running. launchd (macOS) and systemd (Linux) scripts ship in every scaffolded project as template artifacts — run install-service.sh and you're done. pm2 and Docker remain as optional recipes for non-standard environments.",
       "items": [
-        { "name": "register-as-launchd", "description": "macOS launchd plist. The right choice for all machines in the AppyDave fleet." },
-        { "name": "register-as-systemd", "description": "Linux systemd user service. For Linux servers and remote machines." },
-        { "name": "register-as-pm2", "description": "PM2 ecosystem file. Cross-platform fallback when OS-native supervision isn't available." },
-        { "name": "register-as-docker", "description": "Dockerfile + compose. For containerised or cloud deployments." }
+        {
+          "name": "register-as-launchd",
+          "type": "template-artifact",
+          "description": "macOS launchd plist. Ships in every scaffold via scripts/install-service.sh. Start at login, restart on crash. No recipe needed."
+        },
+        {
+          "name": "register-as-systemd",
+          "type": "template-artifact",
+          "description": "Linux systemd user service. Ships in every scaffold via scripts/install-service.sh. Detects OS at install time."
+        },
+        {
+          "name": "register-as-pm2",
+          "type": "recipe",
+          "description": "PM2 ecosystem file. Cross-platform fallback when OS-native supervision isn't available."
+        },
+        {
+          "name": "register-as-docker",
+          "type": "recipe",
+          "description": "Dockerfile + compose. For containerised or cloud deployments."
+        }
       ]
     }
   ]

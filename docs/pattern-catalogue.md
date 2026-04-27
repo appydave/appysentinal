@@ -61,7 +61,7 @@ Updated as we go. New patterns get added when we discover them; matrix cells get
 | # | Pattern | Sentinel support | Notes |
 |---|---|---|---|
 | C1 | Pulse-driven local poll | 🛠️ recipe | `poll-command`, `poll-http` |
-| C2 | Pulse-driven SSH multi-host orchestration | 🛠️ recipe | `orchestrator-ssh`. Already implemented bespoke in AppyRadar legacy `audit.ts` (zero remote footprint via `ssh host 'bash -s'`). |
+| C2 | Pulse-driven SSH multi-host orchestration | 🛠️ recipe | `orchestrator-ssh`. PoC validated 2026-04-27 (`appyradar-sentinal-safe/`). Design decisions locked: **compound scripts** (7 SSH/machine, down from 12) over ControlMaster (revisit only if intervals drop below 5min or harness lands). Machine collection is currently sequential; `Promise.all` is the harness upgrade path. Machine config: `{ name, host }`. Signal shapes: `machine.snapshot` (state) + `machine.offline` (event). Collection intervals are a ConfigLoader concern, not hardcoded. Full spec: `appyradar-sentinal-safe/docs/orchestrator-ssh-recipe.md`. |
 | C3 | Pulse-driven SQL diff (DB mirror) | 🛠️ recipe | New, needed for SS pilot. Reads remote DB by `updated_at`, writes JSONL of changed records locally. Sibling of `poll-http` / `poll-command`; not yet in spec §7.1. |
 | C4 | Event-driven file watch | 🛠️ recipe | `watch-directory` (chokidar) — priority recipe per spec §12 |
 | C5 | Event-driven webhook receiver | 🛠️ recipe | `hook-receiver` — AngelEye pattern |
@@ -78,7 +78,7 @@ Per Anthropic's API/CLI/MCP framework. Mature Sentinels ship all three.
 |---|---|---|---|
 | E1 | API expose (HTTP) | 🛠️ recipe | `api-expose` (Hono). Foundation per Anthropic ladder. |
 | E2 | CLI expose | 🛠️ recipe | `cli-expose`. Local-first developer composition (pipe to jq / grep, on-machine agent loops). |
-| E3 | MCP expose | 🛠️ recipe | `mcp-expose`. Default for AI-agent consumers. |
+| E3 | MCP expose | 🛠️ recipe | `mcp-expose`. PoC validated 2026-04-27. Design confirmed: **read-only layer over snapshot-store** — MCP server reads the snapshot file, does not touch collectors or live systems. Layering: `collector → sentinel-latest.json → MCP server → agents`. Data-age field is first-class on every response (agents need to know how fresh data is). Tool granularity: summary tool + detail tool + domain-specific aggregated tools (the aggregated tools are where MCP adds value over just reading raw JSON). One command-like tool (`trigger_collect`) is acceptable — spawns a subprocess, does not mutate machine data; observer-only invariant holds. Full spec: `appyradar-sentinal-safe/docs/mcp-surface.md`. |
 
 ### Deliver (boundary umbrella 3 — §7.4)
 
@@ -96,7 +96,7 @@ Per Anthropic's API/CLI/MCP framework. Mature Sentinels ship all three.
 | # | Pattern | Sentinel support | Notes |
 |---|---|---|---|
 | I1 | File-based store (JSONL append) | 🛠️ recipe | `jsonl-store`. Default. Append-only + index JSON. AngelEye / FliHub pattern. |
-| I2 | File-based store (snapshot JSON) | 🛠️ recipe | Single-file overwrite via atomic-write. AppyRadar pattern. Sibling of `jsonl-store`; spec §7.2 doesn't yet name this distinctly. |
+| I2 | File-based store (snapshot JSON) | 🛠️ recipe | `snapshot-store`. PoC confirmed 2026-04-27 as a distinct recipe from `jsonl-store` — different purpose (current state, not history), different read pattern (single JSON.parse, no index), different write pattern (full overwrite, not append). Convention: `snapshots/sentinel-latest.json` (always-current) + dated archive. Spec §7.2 needs updating to name this distinctly. |
 | I3 | Memory ring buffer | 🛠️ recipe | `memory-buffer`. Ephemeral, configurable size. |
 | I4 | SQL store | 🛠️ recipe (non-default) | `sqlite-store`. Reserved for cases that genuinely earn it. File-based is default per fragility argument (schema migrations, multi-machine pain, debug cost). |
 | I5 | Atomic file write | ✅ baked | `atomic-write.ts` — temp + rename + optional fsync |
@@ -173,10 +173,10 @@ Pattern × app. `✓` = uses today; `🚧` = planned; `—` = does not / will no
 
 Synthesised from pattern × app — patterns the pilots need that AppySentinel doesn't yet provide as a recipe:
 
-1. **`orchestrator-ssh` recipe** — AppyRadar pilot blocks on this. Currently bespoke in `audit.ts`. Cleanest standalone recipe to write first; AppyRadar is the proving ground.
+1. **`orchestrator-ssh` recipe** — Design locked by PoC (2026-04-27). Compound scripts, 7 SSH/machine, signal shapes defined. Ready to formalise into AppySentinel recipe. Full spec at `appyradar-sentinal-safe/docs/orchestrator-ssh-recipe.md`.
 2. **`sql-diff-collector` recipe** — SS pilot blocks on this. **New pattern not yet in spec §7.1.** Sibling of `poll-http` / `poll-command`. Needed to formalise.
-3. **`snapshot-store` recipe** — AppyRadar's pattern (single overwriting JSON file via atomic-write). **Spec §7.2 doesn't yet name this distinctly** from `jsonl-store`. Probably worth promoting.
-4. **`mcp-expose` recipe** — Both pilots want this. SS as primary surface; AppyRadar as the eventual MCP alongside `api-expose`.
+3. **`snapshot-store` recipe** — PoC confirmed as distinct from `jsonl-store` (2026-04-27). Spec §7.2 needs updating. Convention: `snapshots/sentinel-latest.json`.
+4. **`mcp-expose` recipe** — Pattern locked by PoC (2026-04-27). Read-only over snapshot-store. Data-age field first-class. Full spec at `appyradar-sentinal-safe/docs/mcp-surface.md`.
 5. **`api-expose` recipe** — AppyRadar Sentinel needs this so the AppyRadar Viewer (Baku app, hotel-live.html, Mochaccino panels) can consume snapshots.
 6. **Sentinel/Viewer split guidance (F3)** — Not a recipe but an install-agent rule. Both legacy apps violate it; both pilots must enforce it. Capture as a §1 architectural commitment + install-agent prompt.
 7. **Security tier model (X4–X6)** — All three cells are 🚧 or ❓ across both pilots. Needs a spec §7.8 once we riff on it. Tailscale-default + bearer-token covers most of David's footprint.
@@ -193,6 +193,7 @@ What's deferred (no current pilot validates):
 
 | Date | Change |
 |------|--------|
+| 2026-04-27 | C2 / I2 / E3 updated with PoC-validated design decisions from `appyradar-sentinal-safe/`. Gap summary updated to reflect C2/I2/E3 now have locked designs. |
 | 2026-04-26 | Initial catalogue. Seeded from spec §5–§7 + AppyRadar / AngelEye forensic notes + the Collect/Expose/Deliver reframe + the Anthropic API/CLI/MCP framing. |
 
 ---

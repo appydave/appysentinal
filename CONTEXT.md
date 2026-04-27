@@ -1,5 +1,5 @@
 ---
-generated: 2026-04-26
+generated: 2026-04-27
 generator: system-context
 status: snapshot
 sources:
@@ -9,7 +9,6 @@ sources:
   - docs/appysentinel-spec.md
   - docs/HANDOVER.md
   - docs/pattern-catalogue.md
-  - docs/design-synthesis.md
   - packages/core/package.json
   - packages/core/src/signal.ts
   - packages/core/src/bus.ts
@@ -22,11 +21,20 @@ sources:
   - packages/core/src/index.ts
   - packages/core/test/signal.test.ts
   - packages/core/test/bus.test.ts
+  - packages/core/test/lifecycle.test.ts
+  - packages/core/test/config.test.ts
   - packages/core/test/create-sentinel.test.ts
+  - packages/core/test/atomic-write.test.ts
+  - packages/core/test/serial-queue.test.ts
+  - packages/core/test/logger.test.ts
   - packages/cli/src/scaffold.ts
   - packages/cli/src/prompts.ts
   - packages/cli/src/handoff.ts
+  - packages/cli/test/scaffold.test.ts
   - packages/template/src/main.ts
+  - .github/workflows/ci.yml
+  - .github/workflows/publish.yml
+  - context.globs.json
 regenerate: "Run /system-context in the repo root"
 ---
 
@@ -71,7 +79,7 @@ Hierarchical merge: static defaults → JSON config file → env vars. Zod-valid
 ```
 npx create-appysentinel my-sentinel
 ```
-Layer 1 (static CLI `packages/cli`): prompts for project name + machine name, copies `packages/template` verbatim, rewrites `{{PROJECT_NAME}}` / `{{MACHINE_NAME}}` placeholders, rewrites `workspace:*` dep references to published semver ranges, runs `bun install`, `git init` + initial commit.
+Layer 1 (static CLI `packages/cli`): prompts for project name + machine name, copies `packages/template` verbatim, rewrites `{{PROJECT_NAME}}` / `{{MACHINE_NAME}}` placeholders, rewrites `workspace:*` dep references to published semver ranges, runs `bun install`, `git init` + initial commit. The template ships `CLAUDE.md`, service registration scripts (launchd + systemd), and `.env.example` out of the box.
 
 Layer 2 (agentic handoff): spawns `claude -p "<interview prompt>"`. Claude reads `.claude/skills/configure-sentinel/SKILL.md` in the scaffolded project, interviews the developer on interface / collectors / storage / transport / runtime, generates recipe code, smoke-tests the result. **Claude Code is a hard runtime dependency at install time.** If it's absent, the CLI prints the manual recovery command and exits non-zero.
 
@@ -141,6 +149,8 @@ The Lifecycle listens for SIGHUP and calls `lifecycle.reload()`, which fires all
 
 **The Sentinel's `sentinelId` is unstable by default.** `createSentinel` generates `<name>-<ulid>` if no `sentinelId` is provided. This changes on every restart, which breaks Signal correlation across restarts. Pass a stable `sentinelId` (e.g. from the config file or a fixed constant) when you need cross-restart Signal correlation.
 
+**Pre-push hook blocks broken code.** Husky installs a pre-push hook that runs `bun run test && bun run typecheck` on every `git push`. If either fails, the push is blocked. This is intentional — do not bypass with `--no-verify`. Fix the failure instead.
+
 ---
 
 ## 6. Expert Mental Model
@@ -154,6 +164,8 @@ The cognitive shift is from "library call" to "plugin composition". Recipes are 
 A second shift: **boundary roles, not technologies**. When building a recipe, the first question is not "should I use HTTP or Socket.io?" but "which umbrella does this belong to — am I feeding data into the Sentinel (Collect), letting others read from it (Expose), or pushing data outward from it (Deliver)?" The umbrella determines the design constraints. The same technology (HTTP server) in a Collect role (webhook receiver) has opposite coupling direction to the same technology in an Expose role (REST API).
 
 A third shift: **the Sentinel is not the system, it's the observer of the system.** The expert keeps the Sentinel small, cheap, and always-on. They build the dashboard as a separate Viewer app that reads from the Sentinel's expose surface. They resist the pull to add UI, admin endpoints, or mutation logic into the Sentinel.
+
+A fourth shift: **recipes are byproducts of pilots, not speculative features.** An expert never writes a recipe without a concrete pilot demanding it. The pattern catalogue tracks capability gaps; pilots fill those gaps. Writing recipes ahead of need is premature generalisation — the interface won't be right until a real use case pressures it.
 
 ---
 
@@ -199,6 +211,9 @@ A subscriber that throws (e.g. storage handler with a disk error) has its error 
 **`emitAndWait` in the hot path**
 Using `emitAndWait` for normal emission instead of critical-only back-pressure serialises every signal through all subscribers. Symptom: high-frequency collectors (file watchers, log tailers) back up; event loop saturates. Fix: use plain `emit()` in the hot path; reserve `emitAndWait` for shutdown flush.
 
+**CI publish step fires on stale version**
+`publish.yml` skips publishing if the version already exists on npm (guarded by version-check step). If the version in `package.json` is not bumped before tagging, the publish step exits cleanly but nothing is uploaded. Symptom: `git tag v*` push triggers workflow; workflow completes green; npm registry unchanged. Fix: bump the version in `package.json` before pushing a release tag.
+
 ---
 
 ## Monorepo Layout
@@ -209,8 +224,11 @@ packages/
 ├── config/    → @appydave/appysentinel-config (published)   — shared ESLint/TS/Prettier/Vitest configs
 ├── cli/       → create-appysentinel           (published)   — static scaffolding CLI (Layer 1 + 2)
 └── template/  → @appydave/appysentinel-template (NOT published) — minimal scaffold copied by CLI
+                 Ships: src/main.ts, CLAUDE.md, scripts/launchd + scripts/systemd, .env.example
 ```
 
 Core runtime deps: `pino` (structured logging), `ulid` (Signal IDs), `zod` (config validation).
-Test framework: Vitest. 27 tests pass across 7 test files in `packages/core/test/`.
+Test framework: Vitest. **46 tests pass** — 39 core (8 test files in `packages/core/test/`) + 7 CLI integration (1 test file in `packages/cli/test/`).
 Build: `bun run build` (tsc). Runtime: Bun recommended, Node 20+ supported.
+CI: GitHub Actions on push/PR (typecheck + test); publish workflow on `git tag v*` push.
+Pre-push: Husky hook runs `bun run test && bun run typecheck` — broken code is blocked before reaching remote.

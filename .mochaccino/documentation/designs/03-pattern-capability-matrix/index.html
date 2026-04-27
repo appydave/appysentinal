@@ -230,11 +230,13 @@
       letter-spacing: 0.06em;
     }
 
-    .sentinel-status.baked  { background: #e6f5ee; color: var(--status-baked); }
-    .sentinel-status.recipe { background: #eaf2fc; color: var(--status-recipe); }
-    .sentinel-status.future { background: var(--brand-linen); color: var(--status-future); }
-    .sentinel-status.open   { background: #fdf0dc; color: var(--status-open); }
-    .sentinel-status.out-of-scope { background: var(--brand-linen); color: var(--brand-border); }
+    .sentinel-status.baked          { background: #e6f5ee; color: var(--status-baked); }
+    .sentinel-status.planned-core   { background: #fff8e6; color: #a06800; border: 1px dashed #c8841a; }
+    .sentinel-status.template       { background: #e6f5ee; color: #1a6040; border: 1px solid #2a7a5a; }
+    .sentinel-status.recipe         { background: #eaf2fc; color: var(--status-recipe); }
+    .sentinel-status.future         { background: var(--brand-linen); color: var(--status-future); }
+    .sentinel-status.open           { background: #fdf0dc; color: var(--status-open); }
+    .sentinel-status.out-of-scope   { background: var(--brand-linen); color: var(--brand-border); }
 
     .app-cell {
       text-align: center;
@@ -303,6 +305,44 @@
       color: var(--brand-muted);
     }
 
+    .gap-item.core-gap .gap-priority { color: var(--section-foundation); }
+    .gap-core-tag {
+      display: inline-block;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: var(--brand-linen);
+      color: var(--brand-muted);
+      padding: 1px 5px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    /* Build status bar */
+    .build-status-bar {
+      display: flex;
+      gap: 24px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--brand-linen);
+      flex-wrap: wrap;
+    }
+
+    .build-stat {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 11px;
+      color: var(--brand-muted);
+    }
+
+    .build-stat-value {
+      font-size: 13px;
+      font-weight: bold;
+      color: var(--status-baked);
+    }
+
     /* Footer */
     .page-footer {
       padding: 28px 0 40px;
@@ -337,7 +377,7 @@
 </head>
 <body>
 
-<div class="mocha-banner">Mocha — Pattern Capability Matrix — 2026-04-26</div>
+<div class="mocha-banner">Mocha — Pattern Capability Matrix — 2026-04-27</div>
 <div id="app"><div class="loading">Loading…</div></div>
 
 <script>
@@ -432,10 +472,10 @@ function render(d) {
   const sections = d.sections.map(s => renderSection(s, d.apps)).join('');
 
   const gaps = d.gap_summary.map(g => `
-    <li class="gap-item">
+    <li class="gap-item ${g.type === 'core' ? 'core-gap' : ''}">
       <div class="gap-priority">${g.priority}</div>
       <div class="gap-text">
-        <strong>${g.gap}</strong><br>
+        <strong>${g.gap}</strong>${g.type === 'core' ? '<span class="gap-core-tag">core</span>' : ''}<br>
         <span>${g.blocks}</span>
       </div>
     </li>
@@ -445,6 +485,15 @@ function render(d) {
     `<div style="font-size:11px;color:var(--brand-muted);margin-bottom:4px;"><strong style="font-family:'Roboto Mono',monospace;font-size:10px;">${a.name.replace(' (legacy)', '').replace(' (pilot 1)', '').replace(' (pilot 2)', '')}</strong> — ${a.note}</div>`
   ).join('');
 
+  const bs = d.build_status;
+  const buildBar = bs ? `
+    <div class="build-status-bar">
+      <div class="build-stat"><span>Tests</span><span class="build-stat-value">${bs.tests}</span><span>(was ${bs.tests_prev})</span></div>
+      <div class="build-stat"><span>CI</span><span style="color:var(--status-baked)">✓</span><span>${bs.ci}</span></div>
+      <div class="build-stat"><span>Pre-push</span><span style="color:var(--status-baked)">✓</span><span>${bs.pre_push}</span></div>
+    </div>
+  ` : '';
+
   document.getElementById('app').innerHTML = `
     <div class="container">
       <header class="page-header">
@@ -452,6 +501,8 @@ function render(d) {
         <h1>${d.title}</h1>
         <div class="subtitle">${d.subtitle}</div>
       </header>
+
+      ${buildBar}
 
       <div style="padding:16px 0 4px;font-size:12px;color:var(--brand-muted);">${appColNotes}</div>
 
@@ -475,7 +526,7 @@ function render(d) {
 
       <div class="page-footer">
         <div class="footer-note">
-          appysentinel · documentation workspace · 2026-04-26 &nbsp;·&nbsp;
+          appysentinel · documentation workspace · 2026-04-27 &nbsp;·&nbsp;
           <a class="github-link" href="https://github.com/appydave/appysentinal" target="_blank">github.com/appydave/appysentinal</a>
         </div>
       </div>

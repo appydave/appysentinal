@@ -323,6 +323,62 @@
       line-height: 1.55;
     }
 
+    /* Planned additions (not yet built) */
+    .planned-additions-heading {
+      font-family: 'Oswald', sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--brand-amber);
+      padding: 16px 0 8px;
+    }
+
+    .item-card.planned {
+      background: var(--brand-surface);
+      border-left: 3px dashed var(--brand-border);
+    }
+
+    .badge-planned {
+      display: inline-block;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: var(--brand-linen);
+      color: var(--brand-amber);
+      border: 1px solid var(--brand-amber);
+      padding: 1px 6px;
+      margin-bottom: 6px;
+    }
+
+    /* Template artifact badge */
+    .badge-template {
+      display: inline-block;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: var(--expose-bg);
+      color: var(--layer-expose);
+      border: 1px solid var(--layer-expose);
+      padding: 1px 6px;
+      margin-bottom: 6px;
+    }
+
+    .badge-recipe {
+      display: inline-block;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: var(--ops-bg);
+      color: var(--layer-ops);
+      border: 1px solid var(--layer-ops);
+      padding: 1px 6px;
+      margin-bottom: 6px;
+    }
+
     /* Layer colour themes */
     .layer-foundation .layer-stripe { background: var(--layer-foundation); }
     .layer-foundation .layer-title-bar { background: var(--foundation-bg); }
@@ -382,7 +438,7 @@
 </head>
 <body>
 
-<div class="mocha-banner">Mocha — Architecture Overview — 2026-04-26</div>
+<div class="mocha-banner">Mocha — Architecture Overview — 2026-04-27</div>
 <div id="app"><div class="loading">Loading…</div></div>
 
 <script>
@@ -405,26 +461,51 @@ const layerClass = {
 
 let cardCounter = 0;
 
+function renderOneItem(item, forcePlanned) {
+  const cardId = 'card-' + (++cardCounter);
+  const hasFullDesc = item.description && item.description.length > 80;
+  const isPlanned = forcePlanned || item.status === 'planned';
+  const isTemplate = item.type === 'template-artifact';
+  const isRecipe = item.type === 'recipe';
+
+  let badge = '';
+  if (isPlanned) {
+    badge = `<div class="badge-planned">Coming</div>`;
+  } else if (isTemplate) {
+    badge = `<div class="badge-template">📦 Template</div>`;
+  } else if (isRecipe) {
+    badge = `<div class="badge-recipe">🛠 Recipe</div>`;
+  } else if (item.why) {
+    badge = `<div class="item-why">↳ ${item.why}</div>`;
+  } else {
+    badge = `<div class="item-why-spacer"></div>`;
+  }
+
+  return `
+    <div class="item-card ${isPlanned ? 'planned' : ''}" id="${cardId}">
+      ${badge}
+      <div class="item-name">${item.name}</div>
+      ${item.code ? `<div class="item-code">${item.code}</div>` : ''}
+      <div class="item-desc">${item.description}</div>
+      ${hasFullDesc ? `<div class="item-desc-full">${item.description}</div>` : ''}
+      ${hasFullDesc
+        ? `<button class="item-expand-toggle" onclick="toggleCard('${cardId}')">+ more</button>`
+        : ''}
+    </div>
+  `;
+}
+
 function renderItems(layer) {
-  const isBaked = layer.id === 'foundation';
-  return layer.items.map(item => {
-    const cardId = 'card-' + (++cardCounter);
-    const hasFullDesc = item.description && item.description.length > 80;
-    return `
-      <div class="item-card" id="${cardId}">
-        ${item.why
-          ? `<div class="item-why">↳ ${item.why}</div>`
-          : `<div class="item-why-spacer"></div>`}
-        <div class="item-name">${item.name}</div>
-        ${item.code ? `<div class="item-code">${item.code}</div>` : ''}
-        <div class="item-desc">${item.description}</div>
-        ${hasFullDesc ? `<div class="item-desc-full">${item.description}</div>` : ''}
-        ${hasFullDesc
-          ? `<button class="item-expand-toggle" onclick="toggleCard('${cardId}')">+ more</button>`
-          : ''}
-      </div>
-    `;
-  }).join('');
+  return layer.items.map(item => renderOneItem(item, false)).join('');
+}
+
+function renderPlannedAdditions(layer) {
+  if (!layer.planned_additions || !layer.planned_additions.length) return '';
+  const cards = layer.planned_additions.map(item => renderOneItem(item, true)).join('');
+  return `
+    <div class="planned-additions-heading">Planned additions — not yet built</div>
+    <div class="items-grid">${cards}</div>
+  `;
 }
 
 function renderLayerExtras(layer) {
@@ -459,6 +540,10 @@ function render(d) {
     const cls = layerClass[layer.id] || '';
     // Foundation open by default, rest collapsed
     const openClass = i === 0 ? 'open' : '';
+    const plannedCount = layer.planned_additions ? layer.planned_additions.length : 0;
+    const countLabel = plannedCount
+      ? `${layer.items.length} baked + ${plannedCount} planned`
+      : `${layer.items.length} items`;
     return `
       <div class="layer ${cls} ${openClass}" id="layer-${layer.id}">
         <div class="layer-header" onclick="toggleLayer('${layer.id}')">
@@ -469,7 +554,7 @@ function render(d) {
               <div class="layer-desc">${layer.description}</div>
             </div>
             <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:16px;">
-              <div class="layer-item-count">${layer.items.length} items</div>
+              <div class="layer-item-count">${countLabel}</div>
               <div class="layer-chevron">▲</div>
             </div>
           </div>
@@ -477,6 +562,7 @@ function render(d) {
         <div class="layer-body">
           ${renderLayerExtras(layer)}
           <div class="items-grid">${renderItems(layer)}</div>
+          ${renderPlannedAdditions(layer)}
         </div>
       </div>
     `;
@@ -500,7 +586,7 @@ function render(d) {
 
       <div class="page-footer">
         <div class="footer-note">
-          appysentinel · documentation workspace · 2026-04-26 &nbsp;·&nbsp;
+          appysentinel · documentation workspace · 2026-04-27 &nbsp;·&nbsp;
           <a class="github-link" href="https://github.com/appydave/appysentinal" target="_blank">github.com/appydave/appysentinal</a>
         </div>
       </div>

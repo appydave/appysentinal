@@ -1,10 +1,10 @@
 {
   "meta": {
     "id": "what-is-appysentinel",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "extracted": "2026-04-26",
-    "last_updated": "2026-04-26",
-    "prompt": "Initial creation — orientation intro view for documentation workspace"
+    "last_updated": "2026-04-27",
+    "prompt": "Minor refresh — added getting_started section with three lifecycle moments (Scaffold/Build/Deploy); machine name no longer prompted at scaffold time"
   },
   "title": "What is AppySentinel?",
   "subtitle": "A boilerplate for always-on local data coordinators",
@@ -47,6 +47,23 @@
       "colour_hint": "orange"
     }
   ],
+  "getting_started": {
+    "command": "npx create-appysentinel my-sentinel",
+    "moments": [
+      {
+        "label": "Scaffold",
+        "description": "CLI copies the template, substitutes project name, runs bun install and git init. You get a working skeleton with service registration scripts already included."
+      },
+      {
+        "label": "Build",
+        "description": "Wire recipes into main.ts — collectors, storage, expose surfaces. Run with bun, develop with watch mode. Pre-push hook blocks broken code automatically."
+      },
+      {
+        "label": "Deploy",
+        "description": "Run install-service.sh. The Sentinel registers as a launchd (macOS) or systemd (Linux) service — starts at boot, restarts on crash, zero manual supervision."
+      }
+    ]
+  },
   "vs_appystack": {
     "appystack": "Builds web apps — React + Vite + Express + TypeScript + Socket.io (RVETS). Has a UI by definition.",
     "appysentinel": "Builds always-on local data coordinators — headless, long-running, lightweight. Viewer apps that visualise Sentinel data are built separately, typically on AppyStack."

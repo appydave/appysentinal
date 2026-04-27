@@ -85,10 +85,6 @@
       letter-spacing: -0.01em;
     }
 
-    h1 span {
-      color: var(--brand-brown);
-    }
-
     .github-link {
       font-family: 'Roboto Mono', monospace;
       font-size: 11px;
@@ -330,6 +326,60 @@
       font-style: italic;
     }
 
+    /* ── Getting Started ── */
+    .scaffold-command {
+      background: var(--brand-chrome);
+      color: var(--brand-yellow);
+      font-family: 'Roboto Mono', monospace;
+      font-size: 15px;
+      padding: 14px 20px;
+      letter-spacing: 0.04em;
+      margin-bottom: 28px;
+      display: inline-block;
+    }
+
+    .moments-flow {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1px;
+      background: var(--brand-linen);
+    }
+
+    .moment-card {
+      background: var(--brand-near-white);
+      padding: 24px 22px;
+      position: relative;
+    }
+
+    .moment-card:nth-child(1) { border-top: 3px solid var(--brand-amber); }
+    .moment-card:nth-child(2) { border-top: 3px solid var(--collect-color); }
+    .moment-card:nth-child(3) { border-top: 3px solid var(--expose-color); }
+
+    .moment-num {
+      font-family: 'Oswald', sans-serif;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--brand-muted);
+      margin-bottom: 6px;
+    }
+
+    .moment-label {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 700;
+      font-size: 20px;
+      text-transform: uppercase;
+      color: var(--brand-brown);
+      margin-bottom: 10px;
+    }
+
+    .moment-desc {
+      font-size: 13px;
+      color: var(--brand-muted);
+      line-height: 1.65;
+    }
+
     /* ── vs AppyStack ── */
     .vs-split {
       display: grid;
@@ -445,7 +495,7 @@
     @media (max-width: 680px) {
       .container { padding: 0 20px; }
       .page-header { grid-template-columns: 1fr; }
-      .rules-grid, .vs-split, .pilots-grid { grid-template-columns: 1fr; }
+      .rules-grid, .vs-split, .pilots-grid, .moments-flow { grid-template-columns: 1fr; }
       .umbrellas-layout { grid-template-columns: 1fr; }
       .umbrella-panel.collect { text-align: left; }
     }
@@ -453,7 +503,7 @@
 </head>
 <body>
 
-<div class="mocha-banner">Mocha — What is AppySentinel — 2026-04-26</div>
+<div class="mocha-banner">Mocha — What is AppySentinel — 2026-04-27</div>
 
 <div id="app"><div class="loading">Loading…</div></div>
 
@@ -476,6 +526,14 @@ function render(d) {
       <div class="rule-number">0${i + 1}</div>
       <div class="rule-name">${r.rule}</div>
       <div class="rule-detail">${r.detail}</div>
+    </div>
+  `).join('');
+
+  const momentCards = d.getting_started.moments.map((m, i) => `
+    <div class="moment-card">
+      <div class="moment-num">0${i + 1}</div>
+      <div class="moment-label">${m.label}</div>
+      <div class="moment-desc">${m.description}</div>
     </div>
   `).join('');
 
@@ -546,6 +604,12 @@ function render(d) {
       </div>
 
       <div class="section">
+        <div class="section-heading">Getting Started — Three Moments</div>
+        <div class="scaffold-command">${d.getting_started.command}</div>
+        <div class="moments-flow">${momentCards}</div>
+      </div>
+
+      <div class="section">
         <div class="section-heading">AppySentinel vs AppyStack</div>
         <div class="vs-split">
           <div class="vs-col">
@@ -567,7 +631,7 @@ function render(d) {
       </div>
 
       <div class="page-footer">
-        <div class="footer-note">appysentinel · documentation workspace · 2026-04-26 &nbsp;·&nbsp; <a class="github-link" href="https://github.com/appydave/appysentinal" target="_blank">github.com/appydave/appysentinal</a></div>
+        <div class="footer-note">appysentinel · documentation workspace · 2026-04-27 &nbsp;·&nbsp; <a class="github-link" href="https://github.com/appydave/appysentinal" target="_blank">github.com/appydave/appysentinal</a></div>
       </div>
 
     </div>

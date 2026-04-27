@@ -128,17 +128,25 @@ function bunInstall(targetDir: string): void {
   }
 }
 
-function gitInitAndCommit(targetDir: string): void {
+function gitInit(targetDir: string): void {
   try {
     execSync('git init', { cwd: targetDir, stdio: 'ignore' });
+  } catch (err) {
+    // non-fatal — user can init themselves
+    console.warn('[create-appysentinel] git init skipped:', String(err));
+  }
+}
+
+function gitCommit(targetDir: string): void {
+  try {
     execSync('git add .', { cwd: targetDir, stdio: 'ignore' });
     execSync('git -c commit.gpgsign=false commit -m "Initial scaffold"', {
       cwd: targetDir,
       stdio: 'ignore',
     });
   } catch (err) {
-    // non-fatal — user can init themselves
-    console.warn('[create-appysentinel] git init/commit skipped:', String(err));
+    // non-fatal — user can commit themselves
+    console.warn('[create-appysentinel] git commit skipped:', String(err));
   }
 }
 
@@ -147,8 +155,9 @@ function gitInitAndCommit(targetDir: string): void {
  * 1. Locate the template directory.
  * 2. Copy it to `targetDir`.
  * 3. Replace placeholders in copied files.
- * 4. `bun install` (or `npm install` fallback).
- * 5. `git init` + initial commit.
+ * 4. `git init` — must run before `bun install` so Husky's prepare script succeeds.
+ * 5. `bun install` (or `npm install` fallback).
+ * 6. `git add + commit` — captures the installed lockfile.
  */
 export function runScaffold(options: ScaffoldOptions): ScaffoldResult {
   const templateDir = options.templateDir ?? resolveTemplateDir();
@@ -165,8 +174,9 @@ export function runScaffold(options: ScaffoldOptions): ScaffoldResult {
 
   const filesWritten = copyTemplate(templateDir, options.targetDir);
   replacePlaceholders(options.targetDir, options.projectName);
+  if (!options._skipGit) gitInit(options.targetDir);
   if (!options._skipInstall) bunInstall(options.targetDir);
-  if (!options._skipGit) gitInitAndCommit(options.targetDir);
+  if (!options._skipGit) gitCommit(options.targetDir);
 
   return {
     templateDir,

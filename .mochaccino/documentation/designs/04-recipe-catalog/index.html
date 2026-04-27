@@ -24,11 +24,14 @@
       --umbrella-internal:    #5a4a3a;
       --umbrella-operational: #4a3d6e;
 
-      --proven-border:  #2a7a5a;
-      --proven-bg:      #f0f9f5;
-      --proven-name:    #1a5040;
-      --planned-border: #d4cdc4;
-      --future-border:  #e8e0d4;
+      --proven-border:    #2a7a5a;
+      --proven-bg:        #f0f9f5;
+      --proven-name:      #1a5040;
+      --planned-border:   #d4cdc4;
+      --future-border:    #e8e0d4;
+      --template-border:  #1a6eb5;
+      --template-bg:      #eaf2fc;
+      --template-name:    #0f4a80;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -208,6 +211,18 @@
       color: var(--proven-name);
     }
 
+    /* Template artifact: distinct blue treatment */
+    .recipe-card.status-template-artifact {
+      background: var(--template-bg);
+      border-color: var(--template-border);
+      border-left-color: var(--template-border);
+      border-left-width: 4px;
+    }
+
+    .recipe-card.status-template-artifact .recipe-name {
+      color: var(--template-name);
+    }
+
     /* Future: faded */
     .recipe-card.status-future {
       opacity: 0.65;
@@ -242,9 +257,10 @@
       flex-shrink: 0;
     }
 
-    .status-badge.proven-bespoke { background: #c8eed9; color: #1a5040; }
-    .status-badge.planned        { background: #eaf2fc; color: #1a5fa0; }
-    .status-badge.future         { background: var(--brand-linen); color: var(--brand-muted); }
+    .status-badge.proven-bespoke    { background: #c8eed9; color: #1a5040; }
+    .status-badge.planned           { background: #eaf2fc; color: #1a5fa0; }
+    .status-badge.future            { background: var(--brand-linen); color: var(--brand-muted); }
+    .status-badge.template-artifact { background: var(--template-border); color: white; }
 
     /* Pilot badge — prominent, just below name */
     .pilot-badge {
@@ -372,7 +388,7 @@
 </head>
 <body>
 
-<div class="mocha-banner">Mocha — Recipe Catalog — 2026-04-26</div>
+<div class="mocha-banner">Mocha — Recipe Catalog — 2026-04-27</div>
 <div id="app"><div class="loading">Loading…</div></div>
 
 <script>
@@ -403,7 +419,7 @@ const umbrellaDirection = {
 let cardIndex = 0;
 
 function sortRecipes(recipes) {
-  const priority = { 'proven-bespoke': 0, 'planned': 1, 'future': 2 };
+  const priority = { 'proven-bespoke': 0, 'template-artifact': 1, 'planned': 2, 'future': 3 };
   return [...recipes].sort((a, b) => {
     const pa = priority[a.status] ?? 9;
     const pb = priority[b.status] ?? 9;
@@ -417,7 +433,9 @@ function sortRecipes(recipes) {
 
 function renderCard(r) {
   const id = 'recipe-' + (++cardIndex);
-  const shortStatus = r.status === 'proven-bespoke' ? 'proven' : r.status;
+  const shortStatus = r.status === 'proven-bespoke' ? 'proven'
+                    : r.status === 'template-artifact' ? 'template'
+                    : r.status;
 
   const pilotHtml = r.pilot
     ? `<div class="pilot-badge"><div class="pilot-dot"></div>pilot: ${r.pilot}</div>`
@@ -489,15 +507,20 @@ function render(d) {
     .map(u => renderUmbrella(u, byUmbrella[u]))
     .join('');
 
-  const total   = d.recipes.length;
-  const proven  = d.recipes.filter(r => r.status === 'proven-bespoke').length;
-  const planned = d.recipes.filter(r => r.status === 'planned').length;
+  const total    = d.recipes.length;
+  const proven   = d.recipes.filter(r => r.status === 'proven-bespoke').length;
+  const template = d.recipes.filter(r => r.status === 'template-artifact').length;
+  const planned  = d.recipes.filter(r => r.status === 'planned').length;
 
   const legend = `
     <div class="legend-row">
       <div class="legend-item">
         <div class="legend-swatch" style="background:var(--proven-bg);border-left:4px solid var(--proven-border)"></div>
         proven-bespoke — code exists, needs formalising
+      </div>
+      <div class="legend-item">
+        <div class="legend-swatch" style="background:var(--template-bg);border-left:4px solid var(--template-border)"></div>
+        template artifact — ships in every scaffold (not a recipe)
       </div>
       <div class="legend-item">
         <div class="legend-swatch" style="background:white;border-left:4px solid var(--planned-border)"></div>
@@ -521,7 +544,7 @@ function render(d) {
         <div class="eyebrow">AppySentinel · Documentation</div>
         <h1>${d.title}</h1>
         <div class="subtitle">${d.subtitle}</div>
-        <div class="intro-note">${d.intro} &nbsp;·&nbsp; ${total} recipes: ${proven} proven-bespoke, ${planned} planned.</div>
+        <div class="intro-note">${d.intro} &nbsp;·&nbsp; ${total} entries: ${proven} proven-bespoke, ${template} template artifacts, ${planned} planned.</div>
       </header>
 
       ${legend}
@@ -529,7 +552,7 @@ function render(d) {
 
       <div class="page-footer">
         <div class="footer-note">
-          appysentinel · documentation workspace · 2026-04-26 &nbsp;·&nbsp;
+          appysentinel · documentation workspace · 2026-04-27 &nbsp;·&nbsp;
           <a class="github-link" href="https://github.com/appydave/appysentinal" target="_blank">github.com/appydave/appysentinal</a>
         </div>
       </div>

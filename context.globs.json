@@ -18,6 +18,12 @@
     "cli": [
       "packages/cli/src/**/*.ts"
     ],
+    "cli_tests": [
+      "packages/cli/test/**/*.ts"
+    ],
+    "ci_workflows": [
+      ".github/workflows/*.yml"
+    ],
     "template": [
       "packages/template/src/**/*.ts",
       "packages/template/package.json",

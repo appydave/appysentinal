@@ -1,16 +1,16 @@
 {
   "meta": {
     "id": "recipe-catalog",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "extracted": "2026-04-26",
-    "last_updated": "2026-04-26",
-    "prompt": "Initial creation — card-grid recipe catalog from pattern-catalogue.md and spec §7"
+    "last_updated": "2026-04-27",
+    "prompt": "Surgical refresh — register-as-launchd and register-as-systemd promoted from recipe to template-artifact; they ship in every scaffolded project and are no longer optional installs"
   },
   "title": "Recipe Catalog",
   "subtitle": "Optional capabilities installed per project — core ships none of these",
   "intro": "Recipes are the optional layer of AppySentinel. Core ships slim (pino, ulid, zod only). Every recipe is pulled in by the install agent only when selected. A recipe owns its own dependencies.",
   "umbrellas": ["Collect", "Expose", "Deliver", "Internal", "Operational"],
-  "status_values": ["planned", "proven-bespoke", "future"],
+  "status_values": ["planned", "proven-bespoke", "future", "template-artifact"],
   "recipes": [
     {
       "id": "orchestrator-ssh",
@@ -183,10 +183,10 @@
       "id": "register-as-launchd",
       "name": "register-as-launchd",
       "umbrella": "Operational",
-      "status": "planned",
-      "status_label": "Planned — macOS",
-      "summary": "Register the Sentinel as a launchd service so it starts at login and restarts on crash.",
-      "how": "Generates a .plist file in ~/Library/LaunchAgents/. Provides load/unload commands.",
+      "status": "template-artifact",
+      "status_label": "Promoted — ships in every scaffold",
+      "summary": "macOS launchd plist. Registers the Sentinel to start at login and restart on crash. No longer a recipe — runs automatically via scripts/install-service.sh in every scaffolded project.",
+      "how": "scripts/install-service.sh detects macOS, substitutes {{PROJECT_NAME}}, {{PROJECT_DIR}}, {{BUN_PATH}} into the plist, copies to ~/Library/LaunchAgents/, runs launchctl load.",
       "deps": [],
       "pilot": "AppyRadar Sentinel"
     },
@@ -194,11 +194,33 @@
       "id": "register-as-systemd",
       "name": "register-as-systemd",
       "umbrella": "Operational",
-      "status": "planned",
-      "status_label": "Planned — Linux",
-      "summary": "Register the Sentinel as a systemd user service.",
-      "how": "Generates a .service file in ~/.config/systemd/user/. Provides enable/start/stop commands.",
+      "status": "template-artifact",
+      "status_label": "Promoted — ships in every scaffold",
+      "summary": "Linux systemd user service. No longer a recipe — runs automatically via scripts/install-service.sh in every scaffolded project.",
+      "how": "scripts/install-service.sh detects Linux, substitutes placeholders into the .service file, copies to ~/.config/systemd/user/, runs systemctl --user enable + start.",
       "deps": [],
+      "pilot": "SS Data Query Sentinel"
+    },
+    {
+      "id": "register-as-pm2",
+      "name": "register-as-pm2",
+      "umbrella": "Operational",
+      "status": "planned",
+      "status_label": "Planned — cross-platform fallback",
+      "summary": "PM2 ecosystem file. Cross-platform fallback when OS-native supervision (launchd/systemd) is not available.",
+      "how": "ecosystem.config.js wired to the Sentinel's entry point. pm2 start / pm2 save / pm2 startup.",
+      "deps": ["pm2 (global install)"],
+      "pilot": null
+    },
+    {
+      "id": "register-as-docker",
+      "name": "register-as-docker",
+      "umbrella": "Operational",
+      "status": "planned",
+      "status_label": "Planned — containerised / cloud deployments",
+      "summary": "Dockerfile + docker-compose. For containerised or cloud deployments where OS-native service management is not available.",
+      "how": "Multi-stage Dockerfile (builder + runtime). compose file for local dev. Health check wired to GET /health.",
+      "deps": ["Docker"],
       "pilot": null
     }
   ]

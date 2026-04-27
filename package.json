@@ -12,9 +12,9 @@
   ],
   "scripts": {
     "build": "bun run --filter './packages/core' build && bun run --filter './packages/cli' build",
-    "test": "bun run --filter '*' test",
-    "typecheck": "bun run --filter '*' typecheck",
-    "lint": "bun run --filter '*' lint",
+    "test": "bun run --filter '@appydave/*' test && bun run --filter 'create-appysentinel' test",
+    "typecheck": "bun run --filter '@appydave/*' typecheck && bun run --filter 'create-appysentinel' typecheck",
+    "lint": "bun run --filter '@appydave/*' lint && bun run --filter 'create-appysentinel' lint",
     "prepare": "husky"
   },
   "engines": {

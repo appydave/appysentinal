@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AppySentinel — Developer Workflow</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@200..700&family=Roboto:ital,wght@0,100..900;1,100..900&family=Roboto+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --brand-brown:        #342d2d;
+      --brand-gold:         #ccba9d;
+      --brand-yellow:       #ffde59;
+      --brand-amber:        #c8841a;
+      --brand-muted:        #7a6e5e;
+      --brand-near-white:   #faf5ec;
+      --brand-surface:      #f0ebe4;
+      --brand-linen:        #e8e0d4;
+      --brand-border:       #d4cdc4;
+      --brand-chrome:       #1a1515;
+      --brand-dark-surface: #25201e;
+
+      --scaffold-color: #c8841a;
+      --scaffold-bg:    #fdf0dc;
+      --build-color:    #1a6eb5;
+      --build-bg:       #eaf2fc;
+      --deploy-color:   #2a7a5a;
+      --deploy-bg:      #e6f5ee;
+      --ci-color:       #4a3d6e;
+      --ci-bg:          #f0edf9;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: var(--brand-near-white);
+      color: var(--brand-brown);
+      line-height: 1.6;
+    }
+
+    .mocha-banner {
+      background: var(--brand-chrome);
+      color: var(--brand-gold);
+      font-family: 'Roboto Mono', monospace;
+      font-size: 11px;
+      padding: 7px 32px;
+      letter-spacing: 0.1em;
+    }
+
+    .container {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 0 40px;
+    }
+
+    .page-header {
+      padding: 56px 0 32px;
+      border-bottom: 2px solid var(--brand-linen);
+    }
+
+    .eyebrow {
+      font-family: 'Oswald', sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--brand-amber);
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 700;
+      font-size: clamp(34px, 4.5vw, 52px);
+      line-height: 1.0;
+      text-transform: uppercase;
+      color: var(--brand-brown);
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      font-size: 15px;
+      color: var(--brand-muted);
+      font-weight: 300;
+    }
+
+    .intro-note {
+      margin: 16px 0 0;
+      padding: 12px 16px;
+      background: var(--brand-surface);
+      border-left: 3px solid var(--brand-amber);
+      font-size: 13px;
+      color: var(--brand-muted);
+      line-height: 1.6;
+    }
+
+    /* ── Moment flow ── */
+    .moments-section { padding: 40px 0 0; }
+
+    .moments-pipeline {
+      display: grid;
+      grid-template-columns: 1fr 40px 1fr 40px 1fr;
+      gap: 0;
+      align-items: start;
+      margin-bottom: 4px;
+    }
+
+    .pipeline-arrow {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 22px;
+      font-size: 22px;
+      color: var(--brand-border);
+    }
+
+    .moment-panel {
+      border-top: 4px solid;
+      padding: 22px 22px 20px;
+    }
+
+    .moment-panel.scaffold { border-color: var(--scaffold-color); background: var(--scaffold-bg); }
+    .moment-panel.build    { border-color: var(--build-color);    background: var(--build-bg); }
+    .moment-panel.deploy   { border-color: var(--deploy-color);   background: var(--deploy-bg); }
+
+    .moment-step-num {
+      font-family: 'Oswald', sans-serif;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .moment-panel.scaffold .moment-step-num { color: var(--scaffold-color); }
+    .moment-panel.build    .moment-step-num { color: var(--build-color); }
+    .moment-panel.deploy   .moment-step-num { color: var(--deploy-color); }
+
+    .moment-label {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 700;
+      font-size: 22px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .moment-panel.scaffold .moment-label { color: var(--scaffold-color); }
+    .moment-panel.build    .moment-label { color: var(--build-color); }
+    .moment-panel.deploy   .moment-label { color: var(--deploy-color); }
+
+    .moment-tagline {
+      font-size: 12px;
+      color: var(--brand-muted);
+      font-style: italic;
+      margin-bottom: 12px;
+    }
+
+    .moment-desc {
+      font-size: 13px;
+      color: var(--brand-brown);
+      line-height: 1.6;
+    }
+
+    /* ── Scaffold detail ── */
+    .section {
+      padding: 40px 0;
+      border-top: 1px solid var(--brand-linen);
+    }
+
+    .section-heading {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 600;
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    .section-heading.scaffold { color: var(--scaffold-color); }
+    .section-heading.build    { color: var(--build-color); }
+    .section-heading.deploy   { color: var(--deploy-color); }
+    .section-heading.ci       { color: var(--ci-color); }
+
+    /* What you get table */
+    .scaffold-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .scaffold-table tr {
+      border-bottom: 1px solid var(--brand-linen);
+    }
+
+    .scaffold-table tr:last-child { border-bottom: none; }
+
+    .scaffold-table td {
+      padding: 9px 12px;
+      font-size: 12.5px;
+      vertical-align: top;
+    }
+
+    .scaffold-table td:first-child {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 11.5px;
+      color: var(--brand-brown);
+      white-space: nowrap;
+      width: 38%;
+    }
+
+    .scaffold-table td:last-child {
+      color: var(--brand-muted);
+    }
+
+    .scaffold-table tr:hover td { background: var(--brand-surface); }
+
+    .scaffold-note {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: var(--brand-linen);
+      border-left: 3px solid var(--brand-amber);
+      font-size: 12px;
+      color: var(--brand-muted);
+      font-style: italic;
+    }
+
+    /* Command table */
+    .cmd-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 16px;
+    }
+
+    .cmd-table tr { border-bottom: 1px solid var(--brand-linen); }
+    .cmd-table tr:last-child { border-bottom: none; }
+
+    .cmd-table td {
+      padding: 10px 12px;
+      font-size: 12.5px;
+      vertical-align: top;
+    }
+
+    .cmd-table td:first-child {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 11.5px;
+      color: var(--brand-chrome);
+      background: var(--brand-linen);
+      white-space: nowrap;
+      width: 42%;
+    }
+
+    .cmd-table td:last-child { color: var(--brand-muted); }
+
+    .cmd-table tr:hover td { background: var(--brand-surface); }
+    .cmd-table tr:hover td:first-child { background: var(--brand-border); }
+
+    /* Husky block */
+    .hook-block {
+      background: var(--brand-dark-surface);
+      padding: 18px 22px;
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .hook-icon {
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .hook-cmd {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 13px;
+      color: var(--brand-yellow);
+      margin-bottom: 4px;
+    }
+
+    .hook-desc {
+      font-size: 12px;
+      color: var(--brand-gold);
+      line-height: 1.5;
+    }
+
+    /* Deploy platforms */
+    .platform-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--brand-linen);
+      margin-top: 16px;
+    }
+
+    .platform-card {
+      background: var(--brand-near-white);
+      padding: 18px 20px;
+    }
+
+    .platform-os {
+      font-family: 'Oswald', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--deploy-color);
+      margin-bottom: 4px;
+    }
+
+    .platform-tool {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 11px;
+      color: var(--brand-muted);
+      margin-bottom: 8px;
+    }
+
+    .platform-note {
+      font-size: 12px;
+      color: var(--brand-muted);
+      line-height: 1.5;
+    }
+
+    .platform-location {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 10.5px;
+      color: var(--brand-gold);
+      background: var(--brand-chrome);
+      padding: 3px 8px;
+      display: inline-block;
+      margin-top: 6px;
+    }
+
+    /* CI pipeline */
+    .workflow-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .workflow-card {
+      background: var(--ci-bg);
+      border-top: 3px solid var(--ci-color);
+      padding: 18px 20px;
+    }
+
+    .workflow-name {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 700;
+      font-size: 16px;
+      text-transform: uppercase;
+      color: var(--ci-color);
+      margin-bottom: 4px;
+    }
+
+    .workflow-file {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 10px;
+      color: var(--brand-muted);
+      margin-bottom: 8px;
+    }
+
+    .workflow-trigger {
+      font-size: 12px;
+      color: var(--brand-brown);
+      margin-bottom: 8px;
+    }
+
+    .workflow-steps {
+      list-style: none;
+      padding: 0;
+    }
+
+    .workflow-steps li {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 11px;
+      color: var(--brand-muted);
+      padding: 3px 0;
+      border-bottom: 1px solid var(--brand-linen);
+    }
+
+    .workflow-steps li:last-child { border-bottom: none; }
+
+    .workflow-note {
+      font-size: 11.5px;
+      color: var(--brand-muted);
+      font-style: italic;
+      margin-top: 8px;
+    }
+
+    /* Published packages */
+    .pkg-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--brand-linen);
+    }
+
+    .pkg-card {
+      background: var(--brand-near-white);
+      padding: 14px 16px;
+    }
+
+    .pkg-name {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 11.5px;
+      color: var(--brand-brown);
+      margin-bottom: 4px;
+    }
+
+    .pkg-version {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      color: var(--ci-color);
+    }
+
+    /* Footer */
+    .page-footer { padding: 28px 0 40px; border-top: 1px solid var(--brand-linen); margin-top: 40px; }
+
+    .footer-note {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 10.5px;
+      color: var(--brand-border);
+      text-align: center;
+      letter-spacing: 0.08em;
+    }
+
+    .github-link {
+      color: var(--brand-muted);
+      text-decoration: none;
+      border-bottom: 1px solid var(--brand-border);
+      padding-bottom: 1px;
+    }
+    .github-link:hover { color: var(--brand-brown); }
+
+    .loading {
+      text-align: center;
+      padding: 120px 40px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 13px;
+      color: var(--brand-muted);
+    }
+
+    @media (max-width: 700px) {
+      .container { padding: 0 20px; }
+      .moments-pipeline { grid-template-columns: 1fr; }
+      .pipeline-arrow { display: none; }
+      .workflow-grid, .platform-grid, .pkg-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="mocha-banner">Mocha — Developer Workflow — 2026-04-27</div>
+<div id="app"><div class="loading">Loading…</div></div>
+
+<script>
+fetch('../../data/05-developer-workflow.json')
+  .then(r => r.json())
+  .then(render)
+  .catch(e => {
+    document.getElementById('app').innerHTML =
+      `<div class="loading">Could not load data: ${e.message}</div>`;
+  });
+
+function render(d) {
+  const scaffold = d.moments[0];
+  const build    = d.moments[1];
+  const deploy   = d.moments[2];
+  const ci       = d.ci_pipeline;
+
+  // ── Moment pipeline ──────────────────────────────────────────────────
+  const momentPipeline = `
+    <div class="moments-pipeline">
+      ${d.moments.map((m, i) => `
+        ${i > 0 ? '<div class="pipeline-arrow">→</div>' : ''}
+        <div class="moment-panel ${m.id}">
+          <div class="moment-step-num">0${i + 1}</div>
+          <div class="moment-label">${m.label}</div>
+          <div class="moment-tagline">${m.tagline}</div>
+          <div class="moment-desc">${m.description}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  // ── Scaffold detail ───────────────────────────────────────────────────
+  const scaffoldRows = scaffold.what_you_get.map(f => `
+    <tr>
+      <td>${f.item}</td>
+      <td>${f.note}</td>
+    </tr>
+  `).join('');
+
+  const scaffoldDetail = `
+    <div class="section">
+      <div class="section-heading scaffold">01 — Scaffold — what you get</div>
+      <div style="font-family:'Roboto Mono',monospace;font-size:13px;color:var(--brand-chrome);background:var(--brand-linen);padding:10px 16px;margin-bottom:16px;display:inline-block;">${scaffold.command}</div>
+      <table class="scaffold-table"><tbody>${scaffoldRows}</tbody></table>
+      <div class="scaffold-note">${scaffold.note}</div>
+    </div>
+  `;
+
+  // ── Build detail ───────────────────────────────────────────────────────
+  const buildRows = build.commands.map(c => `
+    <tr>
+      <td>${c.cmd}</td>
+      <td>${c.purpose}</td>
+    </tr>
+  `).join('');
+
+  const hookBlock = `
+    <div class="hook-block">
+      <div class="hook-icon">🔒</div>
+      <div>
+        <div class="hook-cmd">${build.pre_push_hook.command}</div>
+        <div class="hook-desc">${build.pre_push_hook.tool} · ${build.pre_push_hook.trigger} · ${build.pre_push_hook.note}</div>
+      </div>
+    </div>
+  `;
+
+  const buildDetail = `
+    <div class="section">
+      <div class="section-heading build">02 — Build &amp; Develop — commands</div>
+      <table class="cmd-table"><tbody>${buildRows}</tbody></table>
+      ${hookBlock}
+    </div>
+  `;
+
+  // ── Deploy detail ──────────────────────────────────────────────────────
+  const deployRows = deploy.commands.map(c => `
+    <tr>
+      <td>${c.cmd}</td>
+      <td>${c.purpose}</td>
+    </tr>
+  `).join('');
+
+  const platformCards = deploy.platforms.map(p => `
+    <div class="platform-card">
+      <div class="platform-os">${p.os}</div>
+      <div class="platform-tool">via ${p.tool}</div>
+      <div class="platform-note">${p.note}</div>
+      <div class="platform-location">${p.location}</div>
+    </div>
+  `).join('');
+
+  const deployDetail = `
+    <div class="section">
+      <div class="section-heading deploy">03 — Deploy — register as always-on service</div>
+      <table class="cmd-table" style="margin-bottom:16px;"><tbody>${deployRows}</tbody></table>
+      <div class="platform-grid">${platformCards}</div>
+    </div>
+  `;
+
+  // ── CI pipeline ─────────────────────────────────────────────────────
+  const workflowCards = ci.workflows.map(w => `
+    <div class="workflow-card">
+      <div class="workflow-name">${w.name}</div>
+      <div class="workflow-file">${w.file}</div>
+      <div class="workflow-trigger">Trigger: ${w.trigger}</div>
+      <ul class="workflow-steps">${w.steps.map(s => `<li>${s}</li>`).join('')}</ul>
+      <div class="workflow-note">${w.note}</div>
+    </div>
+  `).join('');
+
+  const pkgCards = ci.published_packages.map(p => `
+    <div class="pkg-card">
+      <div class="pkg-name">${p.name}</div>
+      <div class="pkg-version">${p.version}</div>
+    </div>
+  `).join('');
+
+  const ciDetail = `
+    <div class="section">
+      <div class="section-heading ci">CI / CD Pipeline</div>
+      <div class="workflow-grid">${workflowCards}</div>
+      <div style="font-family:'Oswald',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.18em;text-transform:uppercase;color:var(--brand-muted);margin-bottom:10px;">Published packages</div>
+      <div class="pkg-grid">${pkgCards}</div>
+    </div>
+  `;
+
+  document.getElementById('app').innerHTML = `
+    <div class="container">
+      <header class="page-header">
+        <div class="eyebrow">AppySentinel · Documentation</div>
+        <h1>${d.title}</h1>
+        <div class="subtitle">${d.subtitle}</div>
+        <div class="intro-note">${d.intro}</div>
+      </header>
+
+      <div class="moments-section">${momentPipeline}</div>
+
+      ${scaffoldDetail}
+      ${buildDetail}
+      ${deployDetail}
+      ${ciDetail}
+
+      <div class="page-footer">
+        <div class="footer-note">
+          appysentinel · documentation workspace · 2026-04-27 &nbsp;·&nbsp;
+          <a class="github-link" href="https://github.com/appydave/appysentinal" target="_blank">github.com/appydave/appysentinal</a>
+        </div>
+      </div>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>
