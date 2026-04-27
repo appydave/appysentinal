@@ -32,11 +32,15 @@ const PLACEHOLDER_PROJECT = '{{PROJECT_NAME}}';
 
 /**
  * Concrete versions to swap in for `workspace:*` references when copying the
- * template out of the monorepo. Bumped manually whenever core/config releases.
+ * template out of the monorepo.
+ *
+ * IMPORTANT: these track core/config npm releases — NOT the CLI version.
+ * core and config are still at 0.1.0. Only bump these when core or config
+ * publishes a new version to npm. Do not sync to the CLI version number.
  */
 const PUBLISHED_VERSIONS: Record<string, string> = {
-  '@appydave/appysentinel-core': '^0.1.6',
-  '@appydave/appysentinel-config': '^0.1.6',
+  '@appydave/appysentinel-core': '^0.1.0',
+  '@appydave/appysentinel-config': '^0.1.0',
 };
 
 function resolveTemplateDir(): string {
