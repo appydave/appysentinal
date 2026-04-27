@@ -32,22 +32,43 @@ jobs:
         run: bun run --filter './packages/cli' build
 
       - name: Test before publish
-        run: bun run --filter './packages/core' test
+        run: bun run test
 
       - name: Publish @appydave/appysentinel-config
-        run: npm publish --access public
+        run: |
+          PKG=$(node -p "require('./package.json').name")
+          VER=$(node -p "require('./package.json').version")
+          if npm view "$PKG@$VER" version 2>/dev/null | grep -q "$VER"; then
+            echo "$PKG@$VER already published — skipping"
+          else
+            npm publish --access public
+          fi
         working-directory: packages/config
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @appydave/appysentinel-core
-        run: npm publish --access public
+        run: |
+          PKG=$(node -p "require('./package.json').name")
+          VER=$(node -p "require('./package.json').version")
+          if npm view "$PKG@$VER" version 2>/dev/null | grep -q "$VER"; then
+            echo "$PKG@$VER already published — skipping"
+          else
+            npm publish --access public
+          fi
         working-directory: packages/core
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish create-appysentinel
-        run: npm publish --access public
+        run: |
+          PKG=$(node -p "require('./package.json').name")
+          VER=$(node -p "require('./package.json').version")
+          if npm view "$PKG@$VER" version 2>/dev/null | grep -q "$VER"; then
+            echo "$PKG@$VER already published — skipping"
+          else
+            npm publish --access public
+          fi
         working-directory: packages/cli
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
