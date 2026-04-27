@@ -44,6 +44,18 @@ Visualisation is a separate Viewer application that reads from the Sentinel's ex
 
 ---
 
+## Version bump rules (apply before every tag + publish)
+
+| Change type | Bump | Examples |
+|-------------|------|---------|
+| Bug fix, docs, internal refactor — no change to scaffold output | **patch** (0.x.Y) | Fix scaffold order, update CLAUDE.md, fix a parser bug |
+| New feature — changes what a scaffolded project contains or how the CLI behaves | **minor** (0.X.0) | Add new template file, new CLI option, new script in template package.json |
+| Breaking change — renames/removes CLI commands, changes required inputs, removes template files | **major** (X.0.0) | Rename `create-appysentinel` command, drop a required arg |
+
+**Rule**: bump `packages/cli/package.json` version before committing. Tag after the commit lands on main (`git tag vX.Y.Z && git push origin vX.Y.Z`). The publish workflow fires on the tag — not on the commit.
+
+---
+
 ## What Not To Do
 
 - Do not add UI, admin endpoints, or mutation logic into any Sentinel primitive.
