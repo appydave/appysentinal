@@ -8,6 +8,7 @@ import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, wri
 import { dirname, join, resolve } from 'node:path';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { CORE_VERSION, CONFIG_VERSION } from './generated-versions.js';
 
 export interface ScaffoldOptions {
   projectName: string;
@@ -30,17 +31,11 @@ const EXCLUDE_DIRS = new Set(['node_modules', 'dist', 'coverage', '.git']);
 
 const PLACEHOLDER_PROJECT = '{{PROJECT_NAME}}';
 
-/**
- * Concrete versions to swap in for `workspace:*` references when copying the
- * template out of the monorepo.
- *
- * IMPORTANT: these track core/config npm releases — NOT the CLI version.
- * core and config are still at 0.1.0. Only bump these when core or config
- * publishes a new version to npm. Do not sync to the CLI version number.
- */
+// Versions are auto-generated from workspace package.json files by
+// scripts/generate-versions.ts (runs during prepack). Never hardcode these.
 const PUBLISHED_VERSIONS: Record<string, string> = {
-  '@appydave/appysentinel-core': '^0.1.0',
-  '@appydave/appysentinel-config': '^0.1.0',
+  '@appydave/appysentinel-core': CORE_VERSION,
+  '@appydave/appysentinel-config': CONFIG_VERSION,
 };
 
 function resolveTemplateDir(): string {
