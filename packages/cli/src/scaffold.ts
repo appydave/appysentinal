@@ -35,8 +35,8 @@ const PLACEHOLDER_PROJECT = '{{PROJECT_NAME}}';
  * template out of the monorepo. Bumped manually whenever core/config releases.
  */
 const PUBLISHED_VERSIONS: Record<string, string> = {
-  '@appydave/appysentinel-core': '^0.1.0',
-  '@appydave/appysentinel-config': '^0.1.0',
+  '@appydave/appysentinel-core': '^0.1.6',
+  '@appydave/appysentinel-config': '^0.1.6',
 };
 
 function resolveTemplateDir(): string {
