@@ -1,6 +1,6 @@
-# AppySentinel — Session Handover (2026-04-26, session 2)
+# AppySentinel — Session Handover (2026-04-27, session 3)
 
-This supersedes the prior handover (session 1, same date). Do not act on any priority list from earlier versions.
+This supersedes the prior handover (session 2, 2026-04-26). Do not act on any priority list from earlier versions.
 
 ---
 
@@ -8,87 +8,101 @@ This supersedes the prior handover (session 1, same date). Do not act on any pri
 
 | # | File | Why |
 |---|------|-----|
-| 1 | `docs/appysentinel-spec.md` | Updated this session — §1, §3, §5, §7.0, §7.2 all have WHY content now |
-| 2 | `docs/pattern-catalogue.md` | Capability matrix + gap tracker — still the lead living doc |
-| 3 | `CONTEXT.md` | Generated this session — 8-dimension system snapshot |
-| 4 | `.mochaccino/documentation/` | Mochaccino workspace — 3 rendered views + gallery |
-| 5 | `packages/core/src/` | Foundation primitives — all 7 implemented, 27 tests passing |
+| 1 | `docs/HANDOVER.md` | This file — read first |
+| 2 | `docs/appysentinel-spec.md` | §7.6 needs updating (service registration no longer recipes) |
+| 3 | `docs/pattern-catalogue.md` | Capability matrix — needs update for session 3 changes |
+| 4 | `packages/core/src/` | 7 primitives — 39 tests passing |
+| 5 | `packages/cli/` | Scaffold CLI — 7 integration tests, published at 0.1.6 |
 
 ---
 
 ## What was done this session
 
-### Spec — WHY content added (was WHAT-only before)
-- **§1/§3** — corrected "per-machine" to "single-host". A Sentinel runs on one host; it can collect from remote machines via SSH etc. One-per-machine is an option, not a requirement. AppyRadar proves this: one orchestrator, five SSH targets.
-- **§5** — added WHY narrative for foundation primitives. Explains why each of the 7 is baked in (they're the unavoidable floor every always-on headless process needs).
-- **§7.0** — defined the umbrella concept (grouping by direction of data flow, not technology). Explained Expose as local-first. Documented two open design decisions.
-- **§7.2** — added WHY for storage: file-first rationale (zero setup, droppable, no support burden), state-vs-history decision guide, promoted `snapshot-store` as a distinct recipe.
+### CLI — published versions
+- **0.1.3** — removed Layer 2 configure-sentinel handoff from CLI entirely
+- **0.1.4** — removed machine identifier prompt; machine now derived from `os.hostname()` at runtime
+- **0.1.5** — added service registration scripts to template (launchd + systemd)
+- **0.1.6** — CLAUDE.md in template, fixed template package.json bug (had hardcoded name not `{{PROJECT_NAME}}`), added CLI integration tests, closed core 20% test gap
 
-### Mochaccino documentation workspace
-Server runs from `.mochaccino/` at port 7420:
-```
-cd .mochaccino && python3 -m http.server 7420
-```
-Access at `http://localhost:7420/documentation/designs/`
+### Template — what every scaffolded project now ships
+- `CLAUDE.md` — build/deploy lifecycle, recipe pattern, Signal envelope, three umbrellas, hard rules
+- `scripts/install-service.sh` — detects macOS/Linux, registers as always-on service
+- `scripts/uninstall-service.sh`
+- `scripts/launchd.plist` — macOS launchd template (`{{PROJECT_NAME}}`, `{{PROJECT_DIR}}`, `{{BUN_PATH}}` substituted at install time)
+- `scripts/systemd.service` — Linux systemd template
+- `.env.example` — MACHINE_NAME now commented-out optional override (not required)
+- `src/main.ts` — uses `os.hostname()` not `{{MACHINE_NAME}}` placeholder
 
-| View | URL | Status |
-|------|-----|--------|
-| Gallery | `/documentation/designs/` | Active |
-| 01 — What is AppySentinel | `/documentation/designs/01-what-is-appysentinel/` | Active |
-| 02 — Architecture Overview | `/documentation/designs/02-architecture-overview/` | Active — WHY descriptions, open decision callout |
-| 03 — Pattern Capability Matrix | `/documentation/designs/03-pattern-capability-matrix/` | Active |
-| 04 — Recipe Catalog | `/documentation/designs/04-recipe-catalog/` | Planned — not yet rendered |
+### Testing — 27 → 46 tests
+- Core: 39 tests (was 27). Added: config edge cases (invalid JSON, array replacement, deep env paths, unsubscribe), lifecycle signal handler registration, health report detail, logger bindings
+- CLI: 7 new integration tests against real template in real temp dirs. Found and fixed real bug.
+- Escape hatches: `_skipInstall` and `_skipGit` on `ScaffoldOptions` skip shell calls in tests without mocking file I/O
 
-### Alignment audit findings
-Foundation is solid. The gaps are:
+### Infrastructure
+- **GitHub Actions CI** — runs on every push to main: install, build core + cli, typecheck all, test all
+- **GitHub Actions publish** — triggers on `git tag v*`: tests first, then publishes each package. Idempotent — skips already-published versions
+- **Husky pre-push hook** — `bun run test && bun run typecheck` before every `git push`. Installed via `prepare` script on `bun install`
+- **Root README.md** — created; documents quick start, dev workflow, publish process, npm token setup
+- **npm token** — Granular Access Token, 2FA bypass, read+write, expires ~2026-07-27. **Must rotate by then.**
 
-**Zero recipes exist** — not one. No markdown spec files, no code. The path `.claude/skills/recipe/` does not exist. `configure-sentinel` skill is a placeholder. This is expected — pilots will create the first recipes.
+### Key decisions made this session
 
-**Spec drift to fix (minor, not urgent):**
-- `SignalKind` has `'state'` in code but spec text (§7.2, and architecture data JSON) says `'snapshot'`. Fix: update spec and data to use `'state'`.
-- `ConfigLoader` — schema passed at construction in code, spec says it's passed at call time. Update §5.4 interface to match implementation.
-- `atomicWrite` — uses `Uint8Array` not `Buffer`. Update §5.5 type signature.
-- `SignalBus` — adds `emitAndWait` and `size()` beyond spec. Document these in §5.2.
-- `createSentinel()` factory not mentioned in §5 despite being the main consumer API. Add as §5.8.
-- CLI (`packages/cli/`) has no tests.
-- Bun test runner used in practice; Vitest listed in §4 tech stack. Minor — clarify.
-
-**`@appydave/appysentinel-config` package** — exists in `packages/config/`, referenced by template, not documented in spec at all.
-
----
-
-## Open design decisions (documented in spec §7.0)
-
-1. **Expose as control surface** — Expose is read-only by default. Write/control capability (accepting commands from a local agent) belongs in the Expose umbrella as an opt-in, not a default. Not yet designed.
-
-2. **Config-pull as a fourth direction** — spec §3 lists four verbs (COLLECTS, EXPOSES, DELIVERS, PULLS config) but only three umbrellas. Config-pull is filed under coordination recipes (§7.7). Whether it warrants a fourth umbrella is unresolved.
+| Decision | Outcome |
+|----------|---------|
+| Machine name at scaffold time | Removed — derived from `os.hostname()` at runtime |
+| Service registration (launchd/systemd) | Promoted from recipe (§7.6) to template artifact — ships in every project |
+| Layer 2 configure-sentinel | Disabled not removed — re-enable when first pilot has real recipe code |
+| Upgrade story | Deliberately deferred — build pilots first, design upgrade around real evidence |
+| Classic npm tokens | Gone since Dec 2025 — Granular only, 90-day max for write tokens |
+| Integration tests | Real template, real temp dirs, no fs mocking |
 
 ---
 
-## What is NOT next
+## Spec drift still to fix
 
-- ❌ Do not write speculative recipe specs before a pilot demands them.
-- ❌ Do not flesh out `configure-sentinel` skill yet — interview is informed by which recipes exist.
-- ❌ Do not render view 4 (Recipe Catalog) as the first thing — fix spec drift first so the data is accurate.
-
----
-
-## What IS next — priority order
-
-1. **Fix `snapshot` → `state` naming** in spec §7.2 text and in `.mochaccino/documentation/data/02-architecture-overview.json`. Small, precise, do first.
-2. **Fix remaining spec drift** — §5.2 (SignalBus additions), §5.4 (ConfigLoader signature), §5.5 (atomicWrite type), add §5.8 (createSentinel factory). Document `@appydave/appysentinel-config` package.
-3. **Render view 4 — Recipe Catalog** — data file already exists at `.mochaccino/documentation/data/04-recipe-catalog.json`. Card-grid layout, one card per recipe.
-4. **Pilot 1 discovery — AppyRadar Sentinel** — discovery doc at `~/dev/ad/apps/appyradar-sentinal/docs/discovery.md`. Prior art at `~/dev/ad/apps/appyradar/scripts/audit.ts` (728 lines). Key open decision: split-in-place vs new repo.
-5. **Pilot 2 discovery — SS Data Query Sentinel** — discovery doc at `~/dev/clients/supportsignal/sentinal.supportsignal/docs/discovery.md`. Schema fully mapped (15 tables, Tier 1/2 split, PII map, mirror layout). Key open decision: which DB entities to start with.
+- **§7.6** — `register-as-launchd` and `register-as-systemd` are NO LONGER RECIPES. They're template artifacts. Update or remove from recipe catalog.
+- **§8.1** Layer 1 responsibilities — remove machine identifier from list. Note Layer 2 is disabled.
 
 ---
 
-## Mochaccino session learnings (captured in `.mochaccino/learnings.md`)
+## Open loops — priority order
 
-- Always start local server before opening designs — `file://` blocks fetch().
-- Gallery must be generated after every render, not just at the end.
-- Card links must use the numbered folder path from the `view` field, not the slug alone.
-- Structuring data for Peter surfaces doc gaps that reading the spec does not — use this deliberately.
+### Priority 1 — Start immediately (pilots)
+- **AppyRadar Sentinel**: `cd ~/dev/ad/apps/appyradar-sentinal && claude`
+- **SS Data Query Sentinel**: `cd ~/dev/clients/supportsignal/sentinal.supportsignal && claude`
+- Write first recipe based on what pilot actually needs — not speculative
+
+### Priority 2 — Core API additions (before or alongside pilots)
+These are API changes to `packages/core` — need spec update + tests + version bump:
+1. **Health probe** — `GET /health` baked into `createSentinel()`. Raw Node HTTP, no Hono. Port via `HEALTH_PORT` env (default 7300, 0 = disabled)
+2. **dataDir** — `sentinel.dataDir` on createSentinel options. Default `~/.local/share/<name>/`. Override via `DATA_DIR` env.
+3. **PID file** — written to dataDir on start, removed on stop. Prevents double-start when launchd restarts slow-shutting process.
+4. **Self-telemetry heartbeat** — metric signal every 60s: uptime, signals_emitted, errors_caught, bus_subscribers, memory_mb. Baked into createSentinel.
+
+### Priority 3 — Mochaccino views (next visualisation session)
+See `.mochaccino/learnings.md` for server instructions.
+
+| View | What changed | Action needed |
+|------|-------------|---------------|
+| 01 — What is AppySentinel | Three moments (Scaffold/Build/Deploy) now explicit; machine name no longer prompted | Minor update |
+| 02 — Architecture overview | Four missing foundational pieces identified (not built); service registration moved out of primitives | Medium update |
+| 03 — Pattern capability matrix | Tests 27→46, CI, Husky, template additions, 4 new core gaps, upgrade story deferred | Major update |
+| 04 — Recipe catalog | register-as-launchd and register-as-systemd: no longer recipes | Surgical update — mark as "promoted to template" or remove |
+| 05 — Developer Workflow | **NEW VIEW** — Scaffold/Build/Deploy moments, watch mode, pre-push hook, CI, publish pipeline | Build from scratch |
+
+### Priority 4 — Housekeeping
+- Dead code: `dist/handoff.js` still in CLI tarball — delete before next publish (`rm -rf packages/cli/dist`)
+- npm token: expires ~2026-07-27 — calendar reminder to rotate
+
+---
+
+## What NOT to do
+
+- ❌ Do not rebuild upgrade story until pilots are running
+- ❌ Do not re-add machine name prompt to CLI
+- ❌ Do not re-enable Layer 2 until recipes exist
+- ❌ Do not write speculative recipe specs — pilots create the first ones
+- ❌ Do not bypass Husky with `--no-verify`
 
 ---
 
@@ -96,17 +110,19 @@ Foundation is solid. The gaps are:
 
 | Path | Purpose |
 |------|---------|
-| `docs/appysentinel-spec.md` | Design-of-record — now has WHY sections |
-| `docs/pattern-catalogue.md` | Capability matrix + gap tracker |
-| `CONTEXT.md` | 8-dimension system snapshot |
-| `.mochaccino/` | Mochaccino workspace root — serve from here |
-| `.mochaccino/documentation/data/` | Peter's data files (4 files) |
-| `.mochaccino/documentation/designs/` | Mocha's rendered views |
-| `packages/core/src/` | 7 baked-in primitives — all implemented, 27 tests passing |
-| `~/dev/ad/apps/appyradar-sentinal/docs/discovery.md` | Pilot 1 discovery |
-| `~/dev/clients/supportsignal/sentinal.supportsignal/docs/discovery.md` | Pilot 2 discovery |
-| `github.com/appydave/appysentinal` | Remote — main branch, up to date |
+| `packages/core/src/` | 7 baked-in primitives |
+| `packages/core/test/` | 39 tests |
+| `packages/cli/src/scaffold.ts` | Scaffold engine — `_skipInstall`/`_skipGit` escape hatches |
+| `packages/cli/test/scaffold.test.ts` | 7 integration tests |
+| `packages/template/` | What every `npx create-appysentinel` copies |
+| `.github/workflows/ci.yml` | Test + typecheck on push to main |
+| `.github/workflows/publish.yml` | Publish on `git tag v*` — idempotent |
+| `.husky/pre-push` | Pre-push hook |
+| `.mochaccino/` | Mochaccino workspace — `cd .mochaccino && python3 -m http.server 7420` |
+| `~/dev/ad/apps/appyradar-sentinal/` | Pilot 1 — AppyRadar Sentinel |
+| `~/dev/clients/supportsignal/sentinal.supportsignal/` | Pilot 2 — SS Data Query Sentinel |
+| `github.com/appydave/appysentinal` | Remote — main branch |
 
 ---
 
-*End of handover. Start next session by reading `docs/appysentinel-spec.md` §5 and §7, then fix the `snapshot → state` naming before doing anything else.*
+*End of handover. Start next session with pilots OR Mochaccino view updates, depending on David's priority. Read this file first, then relevant package source before touching code.*
