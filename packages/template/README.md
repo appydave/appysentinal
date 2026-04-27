@@ -4,40 +4,49 @@ A per-machine, observer-only telemetry collector built on [AppySentinel](https:/
 
 This project was scaffolded by `create-appysentinel`. It currently contains only the **walking skeleton** — `createSentinel()` is wired up, but no collectors, storage, interface, or transport are configured yet.
 
-## Run it
+## Run it (dev)
 
 ```bash
 bun install
-bun run dev
+bun src/main.ts
 ```
 
 You should see a single `sentinel.started` event on stdout, then the process keeps running until you Ctrl-C.
 
-## Configure it
+## Install as an always-on service
 
-The `configure-sentinel` Claude Code skill walks you through the choices that make this Sentinel actually do something:
+Run once on the target machine when you're ready to deploy:
 
 ```bash
-claude -p "Run the AppySentinel configuration interview. Read .claude/skills/configure-sentinel/SKILL.md"
+bash scripts/install-service.sh
 ```
 
-The interview covers:
+Supports macOS (launchd) and Linux (systemd). Starts on login, restarts on crash.
 
-- **Interface** — how external clients talk to this Sentinel (MCP / REST / both / none)
-- **Inputs** — what to observe (file watchers, polled commands, hook receivers, ssh orchestration, ...)
-- **Storage** — local buffer / persistence (JSONL / SQLite / memory)
-- **Transport** — how Signals leave this machine (HTTP push / Socket.io / OTLP / Supabase / file relay / none)
-- **Runtime** — how the Sentinel runs (launchd / systemd / pm2 / docker / dev-only)
+To remove:
 
-Choices write code into your project under `src/recipes/` and update `appysentinel.json`.
+```bash
+bash scripts/uninstall-service.sh
+```
+
+## Configure it
+
+Open Claude Code inside this project to start wiring recipes:
+
+```bash
+claude
+```
+
+Recipes add real capabilities: file watchers, SSH orchestration, storage, HTTP/MCP expose surfaces, outbound transports.
 
 ## What's baked in vs what's a recipe
 
 **Baked in** (this template + `@appydave/appysentinel-core`):
 - Signal envelope, SignalBus, lifecycle harness (SIGINT/SIGTERM/SIGHUP), config loader, atomic write, serial queue, Pino logger, `createSentinel()` factory.
+- Service registration scripts (`scripts/`).
 
-**Added by recipes** (after the configuration interview):
-- Collectors, storage, interfaces, transports, enrichment, runtime supervisors.
+**Added by recipes** (written during your build session):
+- Collectors, storage, interfaces, transports, enrichment.
 
 ## License
 
