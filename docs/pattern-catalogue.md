@@ -10,6 +10,8 @@ This is the canonical answer to: *"What have we proven works? What's only on pap
 
 Updated as we go. New patterns get added when we discover them; matrix cells get updated when an app is built or a recipe lands.
 
+**Reference convention**: Code references in this document use GitHub repo paths — `github.com/appydave/<repo>/blob/main/<path>` — not absolute filesystem paths. This keeps references stable across machines and deployments. Relative paths within a single repo are acceptable.
+
 ---
 
 ## Apps tracked
@@ -17,7 +19,7 @@ Updated as we go. New patterns get added when we discover them; matrix cells get
 | App | Role | Path | Status |
 |-----|------|------|--------|
 | AppyRadar (legacy) | Reference / pre-split | `~/dev/ad/apps/appyradar/` | Existing — Sentinel + Viewer conflated in one repo. `audit.ts` is the data half; `hotel-live.html` / Mochaccino panels / Baku app are the viewer half. |
-| AppyRadar Sentinel | Pilot 1 (planned) | TBD — split from legacy | To be built on AppySentinel. Source for stressing the orchestrator-SSH + snapshot pattern. |
+| AppyRadar Sentinel | Pilot 1 (active) | `github.com/appydave/appyradar-sentinal` | Built on AppySentinel. SSH-central orchestration across 5 machines. Stress-test for C2 + I2 + E3. Graduation tracking: `docs/graduation-candidates.md` in that repo. |
 | AppyRadar Viewer | Out of scope (here) | TBD — split from legacy | Separate project; consumes the Sentinel via API / MCP expose. |
 | SS Data Query Sentinel | Pilot 2 (planned) | TBD under `~/dev/clients/supportsignal/` | To be built on AppySentinel. Source for stressing the SQL-diff + MCP-expose pattern. |
 | AngelEye (legacy) | Reference / deferred pilot | `~/dev/ad/apps/angeleye/` | Existing — Sentinel + Viewer conflated. Future stress-test for multi-Sentinel push patterns; deferred as a third pilot for now. |
@@ -67,7 +69,8 @@ Updated as we go. New patterns get added when we discover them; matrix cells get
 | C5 | Event-driven webhook receiver | 🛠️ recipe | `hook-receiver` — AngelEye pattern |
 | C6 | Event-driven log tail | 🛠️ recipe | `watch-logfile` |
 | C7 | Subprocess wrap | 🛠️ recipe | `subprocess-wrap` — long-running supervised subprocess |
-| C8 | Active MCP client | 🔮 future | Sentinel-as-MCP-client reading from another MCP server. The mirror of `mcp-expose`. Door to Sentinel-to-Sentinel mesh. Defer until use case. |
+| C8 | Active MCP client | 🔮 future | Sentinel-as-MCP-client reading from another MCP server. The mirror of `mcp-expose`. One concrete use case: when a capability graduates from inline plugin to standalone sentinel (see Capability Graduation section), the host sentinel replaces its SSH-scraping collector with a C8 client that speaks to the graduated sentinel's expose surface. Defer until first graduation event. |
+| C10 | Ingest gesture | 🛠️ recipe | A Collect sub-category for capabilities that pull from external data sources (wearables, file feeds, external services) rather than reading machine state directly. Ingest gestures graduate faster than point-metric collectors because they represent full domains (transcripts, events, files). Example: OMI wearable transcript ingestion in AppyRadar Sentinel (`github.com/appydave/appyradar-sentinal/blob/main/src/collectors/parsers.ts`). Graduation trigger: when the domain has its own enrichment pipeline or storage needs beyond what the host sentinel should own. |
 | C9 | Snapshot capture | 🛠️ recipe | `snapshot-capture` — combine signals into structured snapshot. AppyRadar pattern. |
 
 ### Expose (boundary umbrella 2 — §7.3)
@@ -130,39 +133,77 @@ Per Anthropic's API/CLI/MCP framework. Mature Sentinels ship all three.
 
 ---
 
+## Capability Graduation
+
+Architectural doctrine for how capabilities move through the AppySentinel ecosystem. Direction of travel is always forward — capabilities do not regress.
+
+### The three-stage lifecycle
+
+| Stage | Name | What it means | How the host sentinel talks to it |
+|-------|------|---------------|----------------------------------|
+| **1** | Inline collector | Capability lives inside the host sentinel as a direct SSH / file / API collector | Direct function call within `collectMachine()` or equivalent |
+| **2** | Standalone sentinel | Capability has its own always-on process, its own lifecycle, and its own expose surface | Via the graduated sentinel's expose surface — MCP (C8), REST (E1), or CLI (E2), whichever the host needs |
+| **3** | Recipe | Pattern proven across two or more independent pilots; extracted into AppySentinel for scaffolding | Generated into future sentinels by `configure-sentinel`; no longer a runtime relationship |
+
+### Promotion triggers
+
+- **Stage 1 → 2**: The capability has its own data lifecycle, its own storage needs, its own consumers beyond the host sentinel, or its own enrichment pipeline. One is enough.
+- **Stage 2 → 3**: The same sentinel pattern appears in two or more independent pilots without bespoke variation. That's the signal to extract it as a recipe.
+
+### Inter-sentinel communication (Stage 2+)
+
+When a capability graduates to a standalone sentinel, the host sentinel speaks to it via its expose surface. The expose surface is not prescribed — it depends on what the host needs:
+
+- **MCP** — for agent / Claude integration (pattern C8)
+- **REST API** — for programmatic consumption (pattern E1)  
+- **CLI** — for local scripting and composability (pattern E2)
+
+**Key invariant**: once a capability has its own expose surface, the host sentinel never SSH-scrapes its internals. The expose surface is the contract.
+
+### Ingest gestures and graduation pressure
+
+Ingest gestures (C10) — capabilities that pull from external data sources rather than machine telemetry — tend to graduate faster. They represent full domains (transcripts, events, files) with their own enrichment and storage concerns. When an ingest gesture starts accumulating its own pipeline logic, that's the graduation trigger.
+
+### Per-app graduation tracking
+
+Each sentinel that contains inline collectors should maintain a `docs/graduation-candidates.md` tracking the current stage of each capability, what would trigger promotion, and any blockers. AppyRadar Sentinel example: `github.com/appydave/appyradar-sentinal/blob/main/docs/graduation-candidates.md`.
+
+---
+
 ## Capability matrix
 
 Pattern × app. `✓` = uses today; `🚧` = planned; `—` = does not / will not; `?` = to investigate.
 
-| Pattern | AR (legacy) | AR Sentinel (pilot 1) | SS Sentinel (pilot 2) | AngelEye (legacy) |
+| Pattern | AR (legacy) | AR Sentinel (pilot 1) 🟢 | SS Sentinel (pilot 2) | AngelEye (legacy) |
 |---|:---:|:---:|:---:|:---:|
-| **F1** Always-on loop | — (one-shot) | 🚧 | 🚧 | ✓ |
-| **F2** Headless / no UI | — (conflated) | 🚧 | 🚧 | — (conflated) |
-| **F3** Sentinel/Viewer split | — | 🚧 | 🚧 | — |
-| **F4** Signal envelope | — | 🚧 | 🚧 | — (custom shape) |
-| **F5** SignalBus | — | 🚧 | 🚧 | — |
-| **F6** Config + reload | — | 🚧 | 🚧 | ? |
-| **C2** SSH multi-host poll | ✓ | 🚧 | — | — |
+| **F1** Always-on loop | — (one-shot) | ✓ | 🚧 | ✓ |
+| **F2** Headless / no UI | — (conflated) | ✓ | 🚧 | — (conflated) |
+| **F3** Sentinel/Viewer split | — | ✓ | 🚧 | — |
+| **F4** Signal envelope | — | ✓ | 🚧 | — (custom shape) |
+| **F5** SignalBus | — | ✓ | 🚧 | — |
+| **F6** Config + reload | — | ✓ | 🚧 | ? |
+| **C2** SSH multi-host poll | ✓ | ✓ | — | — |
 | **C3** SQL diff mirror | — | — | 🚧 | — |
 | **C4** File watch | — | — | ? | ? |
 | **C5** Webhook receiver | — | — | — | ✓ |
 | **C8** Active MCP client | — | — | — | — |
-| **C9** Snapshot capture | ✓ | 🚧 | 🚧 | — |
+| **C9** Snapshot capture | ✓ | ✓ | 🚧 | — |
+| **C10** Ingest gesture | — | ✓ (OMI) | — | — |
 | **E1** API expose | — | 🚧 | 🚧 | ✓ (legacy) |
 | **E2** CLI expose | — | ? | ? | — |
-| **E3** MCP expose | — | 🚧 | 🚧 | ? |
+| **E3** MCP expose | — | ✓ | 🚧 | ? |
 | **D1** HTTP push | — | — | — | — |
 | **D3** Supabase push | — | ? | — | — |
 | **D6** Multi-Sentinel push-to-central | — | — | — | — |
 | **I1** JSONL store | — | ? | 🚧 | ✓ |
-| **I2** Snapshot JSON store | ✓ | 🚧 | — | — |
+| **I2** Snapshot JSON store | ✓ | ✓ | — | — |
 | **I3** Memory ring buffer | — | — | — | ? |
 | **I4** SQL store | — | — | ? | ? |
-| **I5** Atomic write | — | 🚧 | 🚧 | ✓ |
+| **I5** Atomic write | — | ✓ | 🚧 | ✓ |
 | **I8** Deterministic classifier | — | — | — | ✓ |
 | **I9** Heuristic classifier | — | — | — | ✓ |
 | **I11** Event normaliser | — | 🚧 | 🚧 | ? |
-| **O1** launchd | — | 🚧 | ? | ? |
+| **O1** launchd | — | 🚧 (next) | ? | ? |
 | **X1** Config-pull | — | ? | — | — |
 | **X4** Localhost-bind security | — | 🚧 | 🚧 | ? |
 | **X5** Bearer-token security | — | ? | ? | — |
@@ -193,6 +234,7 @@ What's deferred (no current pilot validates):
 
 | Date | Change |
 |------|--------|
+| 2026-04-27 | Added Capability Graduation section (three-stage lifecycle, inter-sentinel communication, ingest gesture graduation pressure). Added C10 Ingest gesture pattern. Added GitHub path reference convention. Updated C8 note to reference graduation. Updated capability matrix: AR Sentinel pilot 1 promoted from 🚧 to ✓ on F1-F6, C2, C9, C10, E3, I2, I5. AppyRadar Sentinel now has real GitHub path. |
 | 2026-04-27 | C2 / I2 / E3 updated with PoC-validated design decisions from `appyradar-sentinal-safe/`. Gap summary updated to reflect C2/I2/E3 now have locked designs. |
 | 2026-04-26 | Initial catalogue. Seeded from spec §5–§7 + AppyRadar / AngelEye forensic notes + the Collect/Expose/Deliver reframe + the Anthropic API/CLI/MCP framing. |
 
