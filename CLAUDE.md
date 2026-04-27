@@ -52,7 +52,7 @@ Visualisation is a separate Viewer application that reads from the Sentinel's ex
 | New feature — changes what a scaffolded project contains or how the CLI behaves | **minor** (0.X.0) | Add new template file, new CLI option, new script in template package.json |
 | Breaking change — renames/removes CLI commands, changes required inputs, removes template files | **major** (X.0.0) | Rename `create-appysentinel` command, drop a required arg |
 
-**Rule**: bump `packages/cli/package.json` version before committing. Tag after the commit lands on main (`git tag vX.Y.Z && git push origin vX.Y.Z`). The publish workflow fires on the tag — not on the commit.
+**Rule**: bump `packages/cli/package.json` version before committing. The three packages version independently — CLI, core, and config each have their own version. `PUBLISHED_VERSIONS` in `packages/cli/src/scaffold.ts` tracks the npm-published versions of **core and config only** — do not sync it to the CLI version number. Tag after the commit lands on main (`git tag vX.Y.Z && git push origin vX.Y.Z`). The publish workflow fires on the tag — not on the commit.
 
 ---
 
