@@ -1,13 +1,11 @@
 /**
  * Interactive prompts for `create-appysentinel`.
  *
- * Keep this layer thin — the static CLI's job is purely mechanical
- * scaffolding. The intelligent configuration interview happens in
- * Layer 2 (the `configure-sentinel` Claude skill).
+ * Layer 1 only — mechanical scaffolding. The configure-sentinel agent
+ * interview (Layer 2) is deferred until recipe code exists to generate.
  */
 
-import { cancel, confirm, isCancel, intro, outro, text } from '@clack/prompts';
-import { hostname } from 'node:os';
+import { cancel, isCancel, intro, outro, text } from '@clack/prompts';
 import { basename } from 'node:path';
 
 export interface ScaffoldAnswers {
@@ -15,15 +13,10 @@ export interface ScaffoldAnswers {
   projectName: string;
   /** Absolute target directory. */
   targetDir: string;
-  /** Machine identifier baked into the .env. */
-  machineName: string;
-  /** Whether to immediately hand off to `claude -p` (Layer 2). */
-  runAgent: boolean;
 }
 
 function defaultProjectName(arg?: string): string {
   if (arg && arg.trim().length > 0) return arg.trim();
-  // If invoked from inside a likely-target dir
   const cwdName = basename(process.cwd());
   if (cwdName && cwdName !== '/' && cwdName !== '.') {
     return `${cwdName}-sentinel`;
@@ -51,36 +44,11 @@ export async function runPrompts(args: { initialName?: string }): Promise<Scaffo
     process.exit(0);
   }
 
-  const machineName = await text({
-    message: 'Machine identifier (used in Signal envelope)',
-    placeholder: hostname(),
-    initialValue: hostname(),
-    validate(value) {
-      if (!value || value.trim().length === 0) return 'Machine name is required';
-      return undefined;
-    },
-  });
-  if (isCancel(machineName)) {
-    cancel('Cancelled');
-    process.exit(0);
-  }
-
-  const runAgent = await confirm({
-    message: 'Hand off to Claude Code for the configuration interview after scaffolding?',
-    initialValue: true,
-  });
-  if (isCancel(runAgent)) {
-    cancel('Cancelled');
-    process.exit(0);
-  }
-
   outro('Starting scaffold...');
 
   const targetDir = `${process.cwd()}/${projectName}`;
   return {
     projectName: projectName as string,
     targetDir,
-    machineName: machineName as string,
-    runAgent: runAgent as boolean,
   };
 }

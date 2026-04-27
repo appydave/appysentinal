@@ -5,16 +5,16 @@
  * subscribes a console logger, emits a single startup Signal, and then
  * sits waiting for SIGINT/SIGTERM.
  *
- * After install, the `configure-sentinel` Claude skill will replace this
- * file with a fully wired Sentinel — input collectors, storage, interface,
- * transport, runtime supervisor — based on your answers in the interview.
+ * Build your Sentinel by adding collectors, storage, interfaces, and
+ * transports. Run `claude` inside this project to start building.
  */
 
 import { createSentinel } from '@appydave/appysentinel-core';
+import { hostname } from 'node:os';
 
 const sentinel = createSentinel({
   name: '{{PROJECT_NAME}}',
-  machine: process.env['MACHINE_NAME'] ?? '{{MACHINE_NAME}}',
+  machine: process.env['MACHINE_NAME'] ?? hostname(),
 });
 
 // Default subscriber: log every Signal to the Pino logger.

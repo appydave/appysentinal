@@ -4,14 +4,14 @@
  *
  * Usage: npx create-appysentinel [project-name]
  *
- * Layer 1 only — pure mechanical scaffolding. Layer 2 (the configuration
- * interview) is delegated to `claude -p` after the copy step. See spec §8.
+ * Layer 1 only — mechanical scaffolding (copy template, substitute
+ * placeholders, bun install, git init). Recipe configuration is done
+ * manually inside the project once you know what you need.
  */
 
 import { resolve } from 'node:path';
 import { runPrompts } from './prompts.js';
 import { runScaffold } from './scaffold.js';
-import { runHandoff } from './handoff.js';
 
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
@@ -27,43 +27,19 @@ async function main(): Promise<void> {
     result = runScaffold({
       projectName: answers.projectName,
       targetDir,
-      machineName: answers.machineName,
     });
   } catch (err) {
     console.error('\n  Scaffold failed:', String(err));
     process.exit(1);
   }
 
-  console.log(
-    `\n  Wrote ${result.filesWritten} files from template ${result.templateDir} to ${result.targetDir}.\n`
-  );
-
-  if (!answers.runAgent) {
-    console.log(`  Done. To configure the Sentinel later, run:`);
-    console.log(`    cd ${result.targetDir}`);
-    console.log(`    claude -p "Run the AppySentinel configuration interview. Read .claude/skills/configure-sentinel/SKILL.md"`);
-    return;
-  }
-
-  console.log(`  Handing off to Claude Code for the configuration interview...\n`);
-  const handoff = runHandoff({
-    targetDir: result.targetDir,
-    projectName: answers.projectName,
-  });
-
-  switch (handoff.status) {
-    case 'launched':
-      // claude already streamed its own output; nothing more to do.
-      break;
-    case 'claude-not-found':
-      console.warn(`\n  ${handoff.message}\n`);
-      process.exit(2);
-      break;
-    case 'failed':
-      console.error(`\n  ${handoff.message}\n`);
-      process.exit(3);
-      break;
-  }
+  console.log(`\n  ✓ ${result.filesWritten} files written`);
+  console.log(`  ✓ dependencies installed`);
+  console.log(`  ✓ git repository initialised`);
+  console.log(`\n  Next steps:\n`);
+  console.log(`    cd ${answers.projectName}`);
+  console.log(`    bun src/main.ts          # smoke-test the skeleton`);
+  console.log(`    claude                   # open Claude Code to start building\n`);
 }
 
 main().catch((err) => {

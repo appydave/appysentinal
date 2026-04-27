@@ -12,7 +12,6 @@ import { fileURLToPath } from 'node:url';
 export interface ScaffoldOptions {
   projectName: string;
   targetDir: string;
-  machineName: string;
   /** Path to the template directory. Defaults to ../template/ relative to this file. */
   templateDir?: string;
 }
@@ -26,7 +25,6 @@ export interface ScaffoldResult {
 const EXCLUDE_DIRS = new Set(['node_modules', 'dist', 'coverage', '.git']);
 
 const PLACEHOLDER_PROJECT = '{{PROJECT_NAME}}';
-const PLACEHOLDER_MACHINE = '{{MACHINE_NAME}}';
 
 /**
  * Concrete versions to swap in for `workspace:*` references when copying the
@@ -39,11 +37,12 @@ const PUBLISHED_VERSIONS: Record<string, string> = {
 
 function resolveTemplateDir(): string {
   const here = dirname(fileURLToPath(import.meta.url));
-  // dist layout: packages/cli/dist/index.js -> ../../template
-  // src layout (bun run): packages/cli/src/index.ts -> ../../template
+  // npm install layout: node_modules/create-appysentinel/dist/ -> ../template (copied by prepack)
+  // monorepo dev layout: packages/cli/dist/ -> ../../template (the workspace source)
+  // monorepo src layout: packages/cli/src/ -> ../../template
   const candidates = [
-    resolve(here, '../template'),
-    resolve(here, '../../template'),
+    resolve(here, '../template'),   // npm install (template/ sits beside dist/)
+    resolve(here, '../../template'), // monorepo dev/src
     resolve(here, '../../../template'),
   ];
   for (const c of candidates) {
@@ -81,7 +80,7 @@ function copyTemplate(srcRoot: string, destRoot: string): number {
   return count;
 }
 
-function replacePlaceholders(root: string, projectName: string, machineName: string): void {
+function replacePlaceholders(root: string, projectName: string): void {
   const walk = (dir: string): void => {
     const entries = readdirSync(dir, { withFileTypes: true });
     for (const entry of entries) {
@@ -95,14 +94,11 @@ function replacePlaceholders(root: string, projectName: string, machineName: str
         const original = readFileSync(full, 'utf8');
         const needsRewrite =
           original.includes(PLACEHOLDER_PROJECT) ||
-          original.includes(PLACEHOLDER_MACHINE) ||
           original.includes('workspace:*');
         if (needsRewrite) {
           let replaced = original
             .split(PLACEHOLDER_PROJECT)
-            .join(projectName)
-            .split(PLACEHOLDER_MACHINE)
-            .join(machineName);
+            .join(projectName);
           for (const [pkg, version] of Object.entries(PUBLISHED_VERSIONS)) {
             // Only rewrite the specific `"@scope/pkg": "workspace:*"` form.
             const pattern = new RegExp(
@@ -164,7 +160,7 @@ export function runScaffold(options: ScaffoldOptions): ScaffoldResult {
   }
 
   const filesWritten = copyTemplate(templateDir, options.targetDir);
-  replacePlaceholders(options.targetDir, options.projectName, options.machineName);
+  replacePlaceholders(options.targetDir, options.projectName);
   bunInstall(options.targetDir);
   gitInitAndCommit(options.targetDir);
 
