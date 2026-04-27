@@ -1,7 +1,7 @@
 {
   "meta": {
     "id": "developer-workflow",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "extracted": "2026-04-27",
     "last_updated": "2026-04-27",
     "prompt": "Session 4 update — add vitest.config.ts, src/__tests__/sentinel.test.ts, .husky/pre-push to scaffold what_you_get; update test command note to distinguish scaffolded project vs monorepo; update pre_push_hook note to clarify ships in both; bump create-appysentinel to 0.1.7"
@@ -88,9 +88,9 @@
       }
     ],
     "published_packages": [
-      { "name": "@appydave/appysentinel-core",   "version": "0.1.0" },
-      { "name": "@appydave/appysentinel-config", "version": "0.1.0" },
-      { "name": "create-appysentinel",           "version": "0.1.7" }
+      { "name": "@appydave/appysentinel-core",   "npm": "https://www.npmjs.com/package/@appydave/appysentinel-core" },
+      { "name": "@appydave/appysentinel-config", "npm": "https://www.npmjs.com/package/@appydave/appysentinel-config" },
+      { "name": "create-appysentinel",           "npm": "https://www.npmjs.com/package/create-appysentinel" }
     ]
   }
 }

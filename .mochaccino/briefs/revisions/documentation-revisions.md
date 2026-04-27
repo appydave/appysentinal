@@ -2,7 +2,18 @@
 
 ---
 
-## 2026-04-27 — Session 4 update
+## 2026-04-27 — Session 4 update (revision 2)
+
+### Views updated: 05
+
+**05 — Developer Workflow** (patch)
+- Published packages: removed hardcoded version numbers — replaced with npm links. Version numbers in docs are a lie-in-waiting; npm is the canonical source.
+- HTML: `pkg-version` div replaced with `pkg-npm-link` anchor. CSS updated accordingly.
+- JSON meta: version `1.1.0` → `1.2.0`
+
+---
+
+## 2026-04-27 — Session 4 update (revision 1)
 
 ### Views updated: 05
 

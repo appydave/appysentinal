@@ -406,11 +406,14 @@
       margin-bottom: 4px;
     }
 
-    .pkg-version {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 18px;
-      color: var(--ci-color);
+    .pkg-npm-link {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 10.5px;
+      color: var(--brand-muted);
+      text-decoration: none;
+      border-bottom: 1px solid var(--brand-border);
     }
+    .pkg-npm-link:hover { color: var(--ci-color); }
 
     /* Footer */
     .page-footer { padding: 28px 0 40px; border-top: 1px solid var(--brand-linen); margin-top: 40px; }
@@ -564,7 +567,7 @@ function render(d) {
   const pkgCards = ci.published_packages.map(p => `
     <div class="pkg-card">
       <div class="pkg-name">${p.name}</div>
-      <div class="pkg-version">${p.version}</div>
+      <a class="pkg-npm-link" href="${p.npm}" target="_blank">npmjs.com ↗</a>
     </div>
   `).join('');
 
