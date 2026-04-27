@@ -2,6 +2,19 @@
 
 ---
 
+## 2026-04-27 — Session 4 update
+
+### Views updated: 05
+
+**05 — Developer Workflow** (minor)
+- Scaffold `what_you_get`: added `vitest.config.ts`, `src/__tests__/sentinel.test.ts`, `.husky/pre-push` — these now ship in every scaffolded project
+- Build commands: `bun run test` note updated to distinguish scaffolded project context (1 smoke test) from monorepo context (46 tests); `bun run test:watch` added as a separate command; monorepo-only `--filter` command removed from scaffold context
+- `pre_push_hook.note`: clarified that the hook ships in both scaffolded projects and the AppySentinel monorepo
+- `published_packages`: `create-appysentinel` bumped from `0.1.6` to `0.1.7`
+- JSON meta: version `1.0.0` → `1.1.0`
+
+---
+
 ## 2026-04-27 — Session 3 update
 
 ### Views updated: 01, 02, 03, 04 | View created: 05

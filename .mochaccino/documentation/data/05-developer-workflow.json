@@ -1,10 +1,10 @@
 {
   "meta": {
     "id": "developer-workflow",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "extracted": "2026-04-27",
     "last_updated": "2026-04-27",
-    "prompt": "New view — Developer Workflow: three lifecycle moments (Scaffold/Build/Deploy), watch mode, pre-push hook, CI pipeline, publish process"
+    "prompt": "Session 4 update — add vitest.config.ts, src/__tests__/sentinel.test.ts, .husky/pre-push to scaffold what_you_get; update test command note to distinguish scaffolded project vs monorepo; update pre_push_hook note to clarify ships in both; bump create-appysentinel to 0.1.7"
   },
   "title": "Developer Workflow",
   "subtitle": "From scaffold to always-on service — three distinct moments",
@@ -25,7 +25,10 @@
         { "item": "scripts/systemd.service",  "note": "Linux template — same substitution pattern" },
         { "item": ".env.example",             "note": "MACHINE_NAME is a commented-out override. Default is os.hostname() — no action required." },
         { "item": ".gitignore",               "note": "node_modules, dist, .env" },
-        { "item": "package.json",             "note": "Project name, bun scripts, @appydave/appysentinel-core dependency wired to published version" }
+        { "item": "package.json",             "note": "Project name, bun scripts (dev/start/test/test:watch/typecheck/prepare), @appydave/appysentinel-core dependency wired to published version" },
+        { "item": "vitest.config.ts",         "note": "Vitest config — node environment, globals, 10s timeout. Ready to run with bun run test." },
+        { "item": "src/__tests__/sentinel.test.ts", "note": "Smoke test — starts the sentinel with installSignalHandlers: false, asserts lifecycle reaches running then stopped cleanly." },
+        { "item": ".husky/pre-push",          "note": "Pre-push hook — runs bun run test && bun run typecheck before every git push. Installed automatically on bun install via prepare script." }
       ],
       "note": "After Scaffold the project is functional but unconfigured. main.ts emits one sentinel.started event then idles. Wire recipes before it does anything useful."
     },
@@ -38,15 +41,15 @@
         { "cmd": "bun install",                                            "purpose": "Install dependencies after scaffold or after adding a recipe dep" },
         { "cmd": "bun src/main.ts",                                        "purpose": "Run the Sentinel directly — structured logs to stdout" },
         { "cmd": "bun run build",                                          "purpose": "Compile TypeScript to dist/ — needed before service registration" },
-        { "cmd": "bun run test",                                           "purpose": "Run all Vitest tests (39 core + 7 CLI integration = 46 total)" },
-        { "cmd": "bun run typecheck",                                      "purpose": "TypeScript type-check across all packages" },
-        { "cmd": "bun run --filter './packages/core' test:watch",          "purpose": "Watch mode — re-runs only tests affected by changed files. Leave open while developing core." }
+        { "cmd": "bun run test",                                           "purpose": "Run Vitest tests once. In a scaffolded project: runs the smoke test + any tests you add. In the AppySentinel monorepo: runs all 46 tests (39 core + 7 CLI)." },
+        { "cmd": "bun run test:watch",                                     "purpose": "Watch mode — Vitest re-runs only tests affected by changed files. Leave open while wiring recipes." },
+        { "cmd": "bun run typecheck",                                      "purpose": "TypeScript type-check" }
       ],
       "pre_push_hook": {
         "tool": "Husky",
         "command": "bun run test && bun run typecheck",
         "trigger": "Every git push",
-        "note": "Installed via prepare script on bun install. Broken code cannot reach the remote. Do not bypass with --no-verify — fix the failure instead."
+        "note": "Ships in every scaffolded project (.husky/pre-push) and in the AppySentinel monorepo. Installed automatically when bun install runs the prepare script. Broken code cannot reach the remote. Do not bypass with --no-verify — fix the failure instead."
       }
     },
     {
@@ -87,7 +90,7 @@
     "published_packages": [
       { "name": "@appydave/appysentinel-core",   "version": "0.1.0" },
       { "name": "@appydave/appysentinel-config", "version": "0.1.0" },
-      { "name": "create-appysentinel",           "version": "0.1.6" }
+      { "name": "create-appysentinel",           "version": "0.1.7" }
     ]
   }
 }
