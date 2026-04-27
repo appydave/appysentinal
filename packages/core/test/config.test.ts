@@ -76,4 +76,69 @@ describe('createConfigLoader', () => {
     });
     await expect(loader.load()).rejects.toThrow();
   });
+
+  it('env mapping creates intermediate objects for dotted paths', async () => {
+    const loader = createConfigLoader({
+      schema: z.object({
+        db: z.object({ pool: z.object({ size: z.coerce.number() }) }),
+      }),
+      defaults: { db: { pool: { size: 5 } } },
+      env: { DB_POOL_SIZE: 'db.pool.size' },
+      envSource: { DB_POOL_SIZE: '20' } as NodeJS.ProcessEnv,
+    });
+    const cfg = await loader.load();
+    expect(cfg.db.pool.size).toBe(20);
+  });
+
+  it('arrays in config are replaced not merged', async () => {
+    const tmp = await mkdtemp(join(tmpdir(), 'cfg-'));
+    const filePath = join(tmp, 'config.json');
+    const s = z.object({ tags: z.array(z.string()).default([]) });
+    await fs.writeFile(filePath, JSON.stringify({ tags: ['b', 'c'] }));
+    try {
+      const loader = createConfigLoader({ schema: s, defaults: { tags: ['a'] }, filePath });
+      const cfg = await loader.load();
+      expect(cfg.tags).toEqual(['b', 'c']); // file replaces, not merges
+    } finally {
+      await rm(tmp, { recursive: true, force: true });
+    }
+  });
+
+  it('throws on invalid JSON in config file', async () => {
+    const tmp = await mkdtemp(join(tmpdir(), 'cfg-'));
+    const filePath = join(tmp, 'config.json');
+    await fs.writeFile(filePath, 'not json at all {{{');
+    try {
+      const loader = createConfigLoader({ schema, filePath });
+      await expect(loader.load()).rejects.toThrow();
+    } finally {
+      await rm(tmp, { recursive: true, force: true });
+    }
+  });
+
+  it('throws when config file contains a JSON array instead of object', async () => {
+    const tmp = await mkdtemp(join(tmpdir(), 'cfg-'));
+    const filePath = join(tmp, 'config.json');
+    await fs.writeFile(filePath, '[1, 2, 3]');
+    try {
+      const loader = createConfigLoader({ schema, filePath });
+      await expect(loader.load()).rejects.toThrow('must contain a JSON object');
+    } finally {
+      await rm(tmp, { recursive: true, force: true });
+    }
+  });
+
+  it('onChange unsubscribe stops notifications', async () => {
+    const loader = createConfigLoader({
+      schema: z.object({ port: z.coerce.number().int() }),
+      defaults: { port: 1 },
+    });
+    await loader.load();
+    let count = 0;
+    const unsub = loader.onChange(() => { count++; });
+    await loader.reload();
+    unsub();
+    await loader.reload();
+    expect(count).toBe(1); // only fired before unsubscribe
+  });
 });

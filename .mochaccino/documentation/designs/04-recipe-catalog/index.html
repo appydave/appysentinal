@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AppySentinel — Recipe Catalog</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@200..700&family=Roboto:ital,wght@0,100..900;1,100..900&family=Roboto+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --brand-brown:        #342d2d;
+      --brand-gold:         #ccba9d;
+      --brand-yellow:       #ffde59;
+      --brand-amber:        #c8841a;
+      --brand-muted:        #7a6e5e;
+      --brand-near-white:   #faf5ec;
+      --brand-surface:      #f0ebe4;
+      --brand-linen:        #e8e0d4;
+      --brand-border:       #d4cdc4;
+      --brand-chrome:       #1a1515;
+
+      --umbrella-collect:     #1a5fa0;
+      --umbrella-expose:      #2a7a5a;
+      --umbrella-deliver:     #a05a1a;
+      --umbrella-internal:    #5a4a3a;
+      --umbrella-operational: #4a3d6e;
+
+      --proven-border:  #2a7a5a;
+      --proven-bg:      #f0f9f5;
+      --proven-name:    #1a5040;
+      --planned-border: #d4cdc4;
+      --future-border:  #e8e0d4;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: var(--brand-near-white);
+      color: var(--brand-brown);
+    }
+
+    .mocha-banner {
+      background: var(--brand-chrome);
+      color: var(--brand-gold);
+      font-family: 'Roboto Mono', monospace;
+      font-size: 11px;
+      padding: 7px 32px;
+      letter-spacing: 0.1em;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 32px;
+    }
+
+    .page-header {
+      padding: 52px 0 28px;
+      border-bottom: 2px solid var(--brand-linen);
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      color: var(--brand-muted);
+      text-decoration: none;
+      margin-bottom: 20px;
+    }
+    .back-link:hover { color: var(--brand-brown); }
+
+    .eyebrow {
+      font-family: 'Oswald', sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--brand-amber);
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 700;
+      font-size: clamp(28px, 4vw, 46px);
+      text-transform: uppercase;
+      color: var(--brand-brown);
+      line-height: 1.0;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: var(--brand-muted);
+      font-weight: 300;
+    }
+
+    .intro-note {
+      margin: 16px 0 0;
+      padding: 12px 16px;
+      background: var(--brand-surface);
+      border-left: 3px solid var(--brand-amber);
+      font-size: 12.5px;
+      color: var(--brand-muted);
+      line-height: 1.6;
+    }
+
+    /* Legend */
+    .legend-row {
+      display: flex;
+      gap: 28px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--brand-linen);
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11.5px;
+      color: var(--brand-muted);
+    }
+
+    .legend-swatch {
+      width: 12px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    /* Umbrella section */
+    .umbrella-section { margin-top: 36px; }
+
+    .umbrella-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0 8px;
+      border-bottom: 2px solid currentColor;
+      margin-bottom: 16px;
+    }
+
+    .umbrella-stripe { width: 4px; height: 20px; flex-shrink: 0; }
+
+    .umbrella-label {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 600;
+      font-size: 13px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .umbrella-direction {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      opacity: 0.55;
+      margin-left: 4px;
+    }
+
+    .umbrella-count {
+      margin-left: auto;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 10px;
+      color: var(--brand-border);
+      letter-spacing: 0.08em;
+    }
+
+    /* Card grid */
+    .recipe-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    /* Base card */
+    .recipe-card {
+      background: white;
+      border: 1px solid var(--planned-border);
+      border-left-width: 4px;
+      border-left-color: var(--planned-border);
+      padding: 16px 18px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      transition: border-color 0.1s;
+    }
+
+    .recipe-card:hover {
+      border-color: var(--brand-border);
+      border-left-color: inherit;
+    }
+
+    /* Proven-bespoke: stronger treatment */
+    .recipe-card.status-proven-bespoke {
+      background: var(--proven-bg);
+      border-color: var(--proven-border);
+      border-left-color: var(--proven-border);
+      border-left-width: 4px;
+    }
+
+    .recipe-card.status-proven-bespoke .recipe-name {
+      color: var(--proven-name);
+    }
+
+    /* Future: faded */
+    .recipe-card.status-future {
+      opacity: 0.65;
+      border-left-color: var(--future-border);
+    }
+
+    /* Card top row: name + status badge */
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .recipe-name {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--brand-brown);
+      letter-spacing: 0.02em;
+      line-height: 1.3;
+    }
+
+    .status-badge {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .status-badge.proven-bespoke { background: #c8eed9; color: #1a5040; }
+    .status-badge.planned        { background: #eaf2fc; color: #1a5fa0; }
+    .status-badge.future         { background: var(--brand-linen); color: var(--brand-muted); }
+
+    /* Pilot badge — prominent, just below name */
+    .pilot-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 9.5px;
+      letter-spacing: 0.08em;
+      color: var(--brand-amber);
+      background: #fdf0dc;
+      padding: 3px 9px;
+      margin-bottom: 10px;
+      align-self: flex-start;
+    }
+
+    .pilot-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--brand-amber);
+      flex-shrink: 0;
+    }
+
+    /* Summary — max 3 lines */
+    .recipe-summary {
+      font-size: 12.5px;
+      color: var(--brand-brown);
+      line-height: 1.55;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    /* "How" detail — hidden by default */
+    .detail-toggle {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 9.5px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--brand-border);
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      text-align: left;
+      margin-bottom: 6px;
+    }
+    .detail-toggle:hover { color: var(--brand-muted); }
+
+    .recipe-how {
+      display: none;
+      font-size: 11.5px;
+      color: var(--brand-muted);
+      line-height: 1.5;
+      padding: 8px 10px;
+      background: var(--brand-surface);
+      border-left: 2px solid var(--brand-border);
+      margin-bottom: 8px;
+    }
+
+    .recipe-card.expanded .recipe-how { display: block; }
+    .recipe-card.expanded .detail-toggle { color: var(--brand-muted); }
+
+    /* Prior art */
+    .prior-art-note {
+      font-size: 10.5px;
+      color: var(--brand-muted);
+      font-style: italic;
+      margin-bottom: 8px;
+    }
+
+    /* Deps footer */
+    .card-deps {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: auto;
+      padding-top: 8px;
+      border-top: 1px solid var(--brand-linen);
+    }
+
+    .dep-tag {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 9.5px;
+      color: var(--brand-muted);
+      background: var(--brand-surface);
+      padding: 2px 7px;
+      letter-spacing: 0.03em;
+    }
+
+    /* Page footer */
+    .page-footer {
+      padding: 28px 0 40px;
+      margin-top: 40px;
+      border-top: 1px solid var(--brand-linen);
+    }
+
+    .footer-note {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 10.5px;
+      color: var(--brand-border);
+      text-align: center;
+      letter-spacing: 0.08em;
+    }
+
+    .github-link {
+      color: var(--brand-muted);
+      text-decoration: none;
+      border-bottom: 1px solid var(--brand-border);
+      padding-bottom: 1px;
+    }
+    .github-link:hover { color: var(--brand-brown); }
+
+    .loading {
+      text-align: center;
+      padding: 120px 40px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 13px;
+      color: var(--brand-muted);
+    }
+  </style>
+</head>
+<body>
+
+<div class="mocha-banner">Mocha — Recipe Catalog — 2026-04-26</div>
+<div id="app"><div class="loading">Loading…</div></div>
+
+<script>
+fetch('../../data/04-recipe-catalog.json')
+  .then(r => r.json())
+  .then(render)
+  .catch(e => {
+    document.getElementById('app').innerHTML =
+      `<div class="loading">Could not load data: ${e.message}</div>`;
+  });
+
+const umbrellaColour = {
+  Collect:     'var(--umbrella-collect)',
+  Expose:      'var(--umbrella-expose)',
+  Deliver:     'var(--umbrella-deliver)',
+  Internal:    'var(--umbrella-internal)',
+  Operational: 'var(--umbrella-operational)'
+};
+
+const umbrellaDirection = {
+  Collect:     '← data flows IN',
+  Expose:      '↔ Sentinel is readable',
+  Deliver:     '→ data flows OUT',
+  Internal:    '⟳ storage & enrichment',
+  Operational: '⏻ always-on supervision'
+};
+
+let cardIndex = 0;
+
+function sortRecipes(recipes) {
+  const priority = { 'proven-bespoke': 0, 'planned': 1, 'future': 2 };
+  return [...recipes].sort((a, b) => {
+    const pa = priority[a.status] ?? 9;
+    const pb = priority[b.status] ?? 9;
+    if (pa !== pb) return pa - pb;
+    // within planned: pilot-linked before non-pilot
+    if (a.pilot && !b.pilot) return -1;
+    if (!a.pilot && b.pilot) return 1;
+    return 0;
+  });
+}
+
+function renderCard(r) {
+  const id = 'recipe-' + (++cardIndex);
+  const shortStatus = r.status === 'proven-bespoke' ? 'proven' : r.status;
+
+  const pilotHtml = r.pilot
+    ? `<div class="pilot-badge"><div class="pilot-dot"></div>pilot: ${r.pilot}</div>`
+    : '';
+
+  const priorArt = r.prior_art && r.prior_art !== 'None — greenfield'
+    ? `<div class="prior-art-note">Prior art: ${r.prior_art}</div>`
+    : '';
+
+  const depsHtml = (r.deps || []).length
+    ? `<div class="card-deps">${r.deps.map(d => `<span class="dep-tag">${d}</span>`).join('')}</div>`
+    : '';
+
+  const howHtml = r.how
+    ? `<button class="detail-toggle" onclick="toggleCard('${id}')">+ how it works</button>
+       <div class="recipe-how">${r.how}</div>`
+    : '';
+
+  return `
+    <div class="recipe-card status-${r.status}" id="${id}">
+      <div class="card-top">
+        <div class="recipe-name">${r.name}</div>
+        <div class="status-badge ${r.status}">${shortStatus}</div>
+      </div>
+      ${pilotHtml}
+      <div class="recipe-summary">${r.summary}</div>
+      ${howHtml}
+      ${priorArt}
+      ${depsHtml}
+    </div>
+  `;
+}
+
+function renderUmbrella(umbrella, recipes) {
+  const colour = umbrellaColour[umbrella] || 'var(--brand-muted)';
+  const direction = umbrellaDirection[umbrella] || '';
+  const sorted = sortRecipes(recipes);
+  const cards = sorted.map(renderCard).join('');
+  return `
+    <div class="umbrella-section">
+      <div class="umbrella-header" style="color:${colour}; border-color:${colour}">
+        <div class="umbrella-stripe" style="background:${colour}"></div>
+        <div class="umbrella-label">${umbrella}</div>
+        <span class="umbrella-direction">${direction}</span>
+        <div class="umbrella-count">${recipes.length} recipe${recipes.length !== 1 ? 's' : ''}</div>
+      </div>
+      <div class="recipe-grid">${cards}</div>
+    </div>
+  `;
+}
+
+function toggleCard(id) {
+  const card = document.getElementById(id);
+  const btn = card.querySelector('.detail-toggle');
+  card.classList.toggle('expanded');
+  btn.textContent = card.classList.contains('expanded') ? '− how it works' : '+ how it works';
+}
+
+function render(d) {
+  const byUmbrella = {};
+  for (const u of d.umbrellas) byUmbrella[u] = [];
+  for (const r of d.recipes) {
+    if (byUmbrella[r.umbrella]) byUmbrella[r.umbrella].push(r);
+    else byUmbrella[r.umbrella] = [r];
+  }
+
+  const umbrellaHtml = d.umbrellas
+    .filter(u => byUmbrella[u] && byUmbrella[u].length)
+    .map(u => renderUmbrella(u, byUmbrella[u]))
+    .join('');
+
+  const total   = d.recipes.length;
+  const proven  = d.recipes.filter(r => r.status === 'proven-bespoke').length;
+  const planned = d.recipes.filter(r => r.status === 'planned').length;
+
+  const legend = `
+    <div class="legend-row">
+      <div class="legend-item">
+        <div class="legend-swatch" style="background:var(--proven-bg);border-left:4px solid var(--proven-border)"></div>
+        proven-bespoke — code exists, needs formalising
+      </div>
+      <div class="legend-item">
+        <div class="legend-swatch" style="background:white;border-left:4px solid var(--planned-border)"></div>
+        planned — specified, not yet built
+      </div>
+      <div class="legend-item">
+        <div class="legend-swatch" style="background:white;border-left:4px solid var(--future-border);opacity:0.6"></div>
+        future — deferred beyond v1 pilots
+      </div>
+      <div class="legend-item" style="margin-left:auto;">
+        <div class="pilot-badge" style="margin-bottom:0">pilot: name</div>
+        used by a v1 pilot
+      </div>
+    </div>
+  `;
+
+  document.getElementById('app').innerHTML = `
+    <div class="container">
+      <header class="page-header">
+        <a class="back-link" href="../">← gallery</a>
+        <div class="eyebrow">AppySentinel · Documentation</div>
+        <h1>${d.title}</h1>
+        <div class="subtitle">${d.subtitle}</div>
+        <div class="intro-note">${d.intro} &nbsp;·&nbsp; ${total} recipes: ${proven} proven-bespoke, ${planned} planned.</div>
+      </header>
+
+      ${legend}
+      ${umbrellaHtml}
+
+      <div class="page-footer">
+        <div class="footer-note">
+          appysentinel · documentation workspace · 2026-04-26 &nbsp;·&nbsp;
+          <a class="github-link" href="https://github.com/appydave/appysentinal" target="_blank">github.com/appydave/appysentinal</a>
+        </div>
+      </div>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>

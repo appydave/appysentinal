@@ -74,8 +74,8 @@ Rules:
 | Logging | Pino |
 | File watching | chokidar |
 | Subprocess | Bun / Node `spawn` with streaming |
-| Testing | Vitest |
-| Quality tooling | `@appydave/appystack-config` (ESLint + Prettier + tsconfig) |
+| Testing | Bun test runner (Vitest-compatible API; `bun test` in practice) |
+| Quality tooling | `@appydave/appysentinel-config` (ESLint + Prettier + tsconfig — `packages/config/`) |
 | Distribution | `bun build --compile` for single-binary builds |
 
 **Explicitly NOT in the spine** (these are recipes, not core):
@@ -105,8 +105,14 @@ A lightweight pub/sub so collectors emit signals and transports / stores subscri
 
 ```typescript
 interface SignalBus {
+  /** Fire-and-forget. Handler errors route to onError, never propagate. */
   emit(signal: Signal): void;
+  /** Await every handler. Use only for back-pressure (e.g. shutdown flush). */
+  emitAndWait(signal: Signal): Promise<void>;
+  /** Subscribe. Returns an unsubscribe function. */
   on(handler: (signal: Signal) => void | Promise<void>): () => void;
+  /** Count of active subscribers. Useful for diagnostics and tests. */
+  size(): number;
 }
 ```
 
@@ -128,13 +134,17 @@ Handles:
 
 ### 5.4 Config loader
 
-Hierarchical: built-in defaults → env vars → config file. Validated through a Zod schema. Reloadable on SIGHUP.
+Hierarchical: built-in defaults → config file → env vars. Validated through a Zod schema (passed at construction, not at call time). Reloadable on SIGHUP.
 
 ```typescript
+// Schema and options provided at construction:
+const loader = createConfigLoader<T>({ schema, defaults?, filePath?, env?, envSource? });
+
 interface ConfigLoader<T> {
-  load(schema: z.ZodType<T>): T;
-  reload(): T;
-  onChange(handler: (config: T) => void): void;
+  load(): Promise<T>;
+  reload(): Promise<T>;
+  onChange(handler: (config: T) => void): () => void;  // returns unsubscribe
+  current(): T | undefined;
 }
 ```
 
@@ -143,7 +153,11 @@ interface ConfigLoader<T> {
 Temp-file + rename pattern. Essential for crash safety with flat-file stores.
 
 ```typescript
-async function atomicWrite(path: string, content: string | Buffer): Promise<void>;
+async function atomicWrite(
+  path: string,
+  content: string | Uint8Array,
+  options?: { mode?: number; encoding?: BufferEncoding; fsync?: boolean }
+): Promise<void>;
 ```
 
 ### 5.6 Serial async queue
@@ -164,6 +178,35 @@ Pre-configured Pino, structured, with child-logger support and env-driven level.
 ```typescript
 const logger = createLogger({ name: 'sentinel', level: env.LOG_LEVEL });
 ```
+
+### 5.8 Sentinel factory (`createSentinel`)
+
+The main consumer API. Wires Signal + Bus + Lifecycle + Logger into a single facade. Every scaffolded `main.ts` uses this; the primitives above are rarely called directly.
+
+```typescript
+const sentinel = createSentinel({ name: string, machine: string, sentinelId?: string });
+
+interface Sentinel {
+  // Identity
+  readonly name: string;
+  readonly machine: string;
+  readonly sentinelId: string;
+  readonly logger: Logger;
+  // Escape hatches
+  readonly bus: SignalBus;
+  readonly lifecycle: Lifecycle;
+  // Emit
+  emit<P>(input: SignalInput<P>): Signal<P>;
+  emitAndWait<P>(input: SignalInput<P>): Promise<Signal<P>>;
+  on(handler: (signal: Signal) => void | Promise<void>): () => void;
+  // Lifecycle
+  start(): Promise<void>;
+  stop(reason?: string): Promise<void>;
+  reload(): Promise<void>;
+}
+```
+
+Nothing happens until `sentinel.start()` is called. Recipes register hooks on `sentinel.lifecycle` before start.
 
 ---
 
@@ -324,7 +367,7 @@ Internal recipes (storage §7.2, enrichment §7.5) sit between the umbrellas —
 - **History** (what events occurred, what changed over time) → `jsonl-store`. Append each event. The record accumulates; you can replay it or query back in time.
 - **Recent-only** (last N signals for a live health check, no persistence needed) → `memory-buffer`. High-frequency signals where history has no value.
 
-This choice maps directly to the Signal's `kind` field (§6): `snapshot` kind signals → snapshot-store; `log` and `event` kind signals → jsonl-store.
+This choice maps directly to the Signal's `kind` field (§6): `state` kind signals → snapshot-store; `log` and `event` kind signals → jsonl-store.
 
 | Recipe | One-line spec |
 |--------|----------------|

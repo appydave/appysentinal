@@ -14,6 +14,10 @@ export interface ScaffoldOptions {
   targetDir: string;
   /** Path to the template directory. Defaults to ../template/ relative to this file. */
   templateDir?: string;
+  /** Skip `bun install` / `npm install`. Tests only. */
+  _skipInstall?: boolean;
+  /** Skip `git init` + initial commit. Tests only. */
+  _skipGit?: boolean;
 }
 
 export interface ScaffoldResult {
@@ -161,8 +165,8 @@ export function runScaffold(options: ScaffoldOptions): ScaffoldResult {
 
   const filesWritten = copyTemplate(templateDir, options.targetDir);
   replacePlaceholders(options.targetDir, options.projectName);
-  bunInstall(options.targetDir);
-  gitInitAndCommit(options.targetDir);
+  if (!options._skipInstall) bunInstall(options.targetDir);
+  if (!options._skipGit) gitInitAndCommit(options.targetDir);
 
   return {
     templateDir,

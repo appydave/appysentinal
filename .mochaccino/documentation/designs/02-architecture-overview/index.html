@@ -18,7 +18,6 @@
       --brand-border:       #d4cdc4;
       --brand-chrome:       #1a1515;
       --brand-dark-surface: #25201e;
-      --brand-blue:         #2E91FC;
 
       --layer-foundation: #342d2d;
       --layer-collect:    #1a5fa0;
@@ -59,9 +58,8 @@
       padding: 0 40px;
     }
 
-    /* Header */
     .page-header {
-      padding: 56px 0 44px;
+      padding: 56px 0 32px;
       border-bottom: 2px solid var(--brand-linen);
     }
 
@@ -91,14 +89,55 @@
       font-weight: 300;
     }
 
-    /* Layer stack */
-    .layer-stack {
-      padding: 52px 0;
+    /* Legend */
+    .legend {
+      display: flex;
+      gap: 20px;
+      padding: 16px 0 0;
+      flex-wrap: wrap;
     }
 
-    .layer {
-      margin-bottom: 3px;
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--brand-muted);
     }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      flex-shrink: 0;
+    }
+
+    /* Controls row */
+    .controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 16px;
+      padding: 20px 0 8px;
+      border-bottom: 1px solid var(--brand-linen);
+    }
+
+    .ctrl-btn {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--brand-muted);
+      background: none;
+      border: 1px solid var(--brand-border);
+      padding: 4px 10px;
+      cursor: pointer;
+    }
+    .ctrl-btn:hover { color: var(--brand-brown); border-color: var(--brand-brown); }
+
+    /* Layer stack */
+    .layer-stack { padding: 20px 0 40px; }
+
+    .layer { margin-bottom: 3px; }
 
     .layer-header {
       display: flex;
@@ -107,10 +146,7 @@
       user-select: none;
     }
 
-    .layer-stripe {
-      width: 6px;
-      flex-shrink: 0;
-    }
+    .layer-stripe { width: 6px; flex-shrink: 0; }
 
     .layer-title-bar {
       flex: 1;
@@ -128,6 +164,13 @@
       letter-spacing: 0.08em;
     }
 
+    .layer-desc {
+      font-size: 12px;
+      color: var(--brand-muted);
+      margin-top: 3px;
+      max-width: 680px;
+    }
+
     .layer-item-count {
       font-family: 'Roboto Mono', monospace;
       font-size: 11px;
@@ -135,21 +178,19 @@
     }
 
     .layer-chevron {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--brand-muted);
       margin-left: 12px;
       transition: transform 0.2s ease;
+      display: inline-block;
     }
 
     .layer.open .layer-chevron { transform: rotate(180deg); }
 
-    .layer-body {
-      display: none;
-      padding: 0 0 4px 6px;
-    }
-
+    .layer-body { display: none; padding: 0 0 4px 6px; }
     .layer.open .layer-body { display: block; }
 
+    /* Item cards grid */
     .items-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -159,7 +200,30 @@
 
     .item-card {
       background: var(--brand-near-white);
-      padding: 18px 20px;
+      padding: 16px 20px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    /* WHY tag leads — top of card */
+    .item-why {
+      display: inline-block;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      background: var(--brand-yellow);
+      color: var(--brand-brown);
+      padding: 2px 7px;
+      margin-bottom: 8px;
+      align-self: flex-start;
+    }
+
+    .item-why-spacer {
+      /* keeps card height consistent when no WHY tag */
+      height: 20px;
+      margin-bottom: 8px;
     }
 
     .item-name {
@@ -168,32 +232,65 @@
       font-size: 14px;
       text-transform: uppercase;
       letter-spacing: 0.04em;
-      margin-bottom: 4px;
+      margin-bottom: 3px;
     }
 
     .item-code {
       font-family: 'Roboto Mono', monospace;
       font-size: 10px;
       color: var(--brand-muted);
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
 
+    /* Description: clamped to 2 lines on face */
     .item-desc {
+      font-size: 12.5px;
+      color: var(--brand-muted);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* Expand toggle */
+    .item-expand-toggle {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 9.5px;
+      letter-spacing: 0.08em;
+      color: var(--brand-border);
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 6px 0 0;
+      text-align: left;
+      text-transform: uppercase;
+    }
+    .item-expand-toggle:hover { color: var(--brand-muted); }
+
+    /* Full description shown when expanded */
+    .item-desc-full {
+      display: none;
       font-size: 12.5px;
       color: var(--brand-muted);
       line-height: 1.55;
     }
 
-    .item-why {
+    .item-card.expanded .item-desc { display: none; }
+    .item-card.expanded .item-desc-full { display: block; }
+    .item-card.expanded .item-expand-toggle { color: var(--brand-muted); }
+
+    /* Baked badge */
+    .badge-baked {
       display: inline-block;
       font-family: 'Roboto Mono', monospace;
       font-size: 9px;
-      letter-spacing: 0.12em;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
       background: var(--brand-yellow);
       color: var(--brand-brown);
       padding: 1px 6px;
-      margin-top: 6px;
+      margin-bottom: 6px;
     }
 
     .open-decision {
@@ -205,7 +302,6 @@
       color: var(--brand-muted);
       line-height: 1.55;
     }
-
     .open-decision-label {
       font-family: 'Oswald', sans-serif;
       font-size: 10px;
@@ -227,7 +323,7 @@
       line-height: 1.55;
     }
 
-    /* Layer-specific colours */
+    /* Layer colour themes */
     .layer-foundation .layer-stripe { background: var(--layer-foundation); }
     .layer-foundation .layer-title-bar { background: var(--foundation-bg); }
     .layer-foundation .layer-label { color: var(--layer-foundation); }
@@ -258,47 +354,8 @@
     .layer-ops .layer-label { color: var(--layer-ops); }
     .layer-ops .item-name { color: var(--layer-ops); }
 
-    /* Foundation items: baked badge */
-    .badge-baked {
-      display: inline-block;
-      font-family: 'Roboto Mono', monospace;
-      font-size: 9px;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      background: var(--brand-yellow);
-      color: var(--brand-brown);
-      padding: 1px 6px;
-      margin-bottom: 6px;
-    }
-
-    /* Legend */
-    .legend {
-      display: flex;
-      gap: 20px;
-      padding: 16px 0 40px;
-      border-bottom: 1px solid var(--brand-linen);
-      flex-wrap: wrap;
-    }
-
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 12px;
-      color: var(--brand-muted);
-    }
-
-    .legend-dot {
-      width: 10px;
-      height: 10px;
-      flex-shrink: 0;
-    }
-
     /* Footer */
-    .page-footer {
-      padding: 28px 0 40px;
-    }
-
+    .page-footer { padding: 28px 0 40px; border-top: 1px solid var(--brand-linen); margin-top: 20px; }
     .footer-note {
       font-family: 'Roboto Mono', monospace;
       font-size: 10.5px;
@@ -306,16 +363,13 @@
       text-align: center;
       letter-spacing: 0.08em;
     }
-
     .github-link {
-      font-family: 'Roboto Mono', monospace;
-      font-size: 11px;
       color: var(--brand-muted);
       text-decoration: none;
       border-bottom: 1px solid var(--brand-border);
       padding-bottom: 1px;
     }
-    .github-link:hover { color: var(--brand-brown); border-color: var(--brand-brown); }
+    .github-link:hover { color: var(--brand-brown); }
 
     .loading {
       text-align: center;
@@ -329,7 +383,6 @@
 <body>
 
 <div class="mocha-banner">Mocha — Architecture Overview — 2026-04-26</div>
-
 <div id="app"><div class="loading">Loading…</div></div>
 
 <script>
@@ -350,17 +403,28 @@ const layerClass = {
   operational:'layer-ops'
 };
 
+let cardCounter = 0;
+
 function renderItems(layer) {
   const isBaked = layer.id === 'foundation';
-  return layer.items.map(item => `
-    <div class="item-card">
-      ${isBaked ? '<div class="badge-baked">baked in</div>' : ''}
-      <div class="item-name">${item.name}</div>
-      ${item.code ? `<div class="item-code">${item.code}</div>` : ''}
-      <div class="item-desc">${item.description}</div>
-      ${item.why ? `<div class="item-why">↳ ${item.why}</div>` : ''}
-    </div>
-  `).join('');
+  return layer.items.map(item => {
+    const cardId = 'card-' + (++cardCounter);
+    const hasFullDesc = item.description && item.description.length > 80;
+    return `
+      <div class="item-card" id="${cardId}">
+        ${item.why
+          ? `<div class="item-why">↳ ${item.why}</div>`
+          : `<div class="item-why-spacer"></div>`}
+        <div class="item-name">${item.name}</div>
+        ${item.code ? `<div class="item-code">${item.code}</div>` : ''}
+        <div class="item-desc">${item.description}</div>
+        ${hasFullDesc ? `<div class="item-desc-full">${item.description}</div>` : ''}
+        ${hasFullDesc
+          ? `<button class="item-expand-toggle" onclick="toggleCard('${cardId}')">+ more</button>`
+          : ''}
+      </div>
+    `;
+  }).join('');
 }
 
 function renderLayerExtras(layer) {
@@ -391,18 +455,20 @@ function render(d) {
     </div>
   `).join('');
 
-  const layers = d.layers.map(layer => {
+  const layers = d.layers.map((layer, i) => {
     const cls = layerClass[layer.id] || '';
+    // Foundation open by default, rest collapsed
+    const openClass = i === 0 ? 'open' : '';
     return `
-      <div class="layer ${cls} open" id="layer-${layer.id}">
+      <div class="layer ${cls} ${openClass}" id="layer-${layer.id}">
         <div class="layer-header" onclick="toggleLayer('${layer.id}')">
           <div class="layer-stripe"></div>
           <div class="layer-title-bar">
             <div>
               <div class="layer-label">${layer.label}</div>
-              <div style="font-size:12px;color:var(--brand-muted);margin-top:2px;">${layer.description}</div>
+              <div class="layer-desc">${layer.description}</div>
             </div>
-            <div style="display:flex;align-items:center;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:16px;">
               <div class="layer-item-count">${layer.items.length} items</div>
               <div class="layer-chevron">▲</div>
             </div>
@@ -422,9 +488,13 @@ function render(d) {
         <div class="eyebrow">AppySentinel · Documentation</div>
         <h1>${d.title}</h1>
         <div class="subtitle">${d.subtitle}</div>
+        <div class="legend">${legend}</div>
       </header>
 
-      <div class="legend">${legend}</div>
+      <div class="controls-row">
+        <button class="ctrl-btn" onclick="expandAll()">Expand all</button>
+        <button class="ctrl-btn" onclick="collapseAll()">Collapse all</button>
+      </div>
 
       <div class="layer-stack">${layers}</div>
 
@@ -439,8 +509,22 @@ function render(d) {
 }
 
 function toggleLayer(id) {
-  const el = document.getElementById('layer-' + id);
-  el.classList.toggle('open');
+  document.getElementById('layer-' + id).classList.toggle('open');
+}
+
+function expandAll() {
+  document.querySelectorAll('.layer').forEach(el => el.classList.add('open'));
+}
+
+function collapseAll() {
+  document.querySelectorAll('.layer').forEach(el => el.classList.remove('open'));
+}
+
+function toggleCard(id) {
+  const card = document.getElementById(id);
+  const btn = card.querySelector('.item-expand-toggle');
+  card.classList.toggle('expanded');
+  btn.textContent = card.classList.contains('expanded') ? '− less' : '+ more';
 }
 </script>
 </body>

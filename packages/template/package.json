@@ -1,8 +1,8 @@
 {
-  "name": "@appydave/appysentinel-template",
+  "name": "{{PROJECT_NAME}}",
   "version": "0.1.0",
   "private": true,
-  "description": "Minimal AppySentinel scaffold — the template that create-appysentinel copies into new projects",
+  "description": "AppySentinel Sentinel — {{PROJECT_NAME}}",
   "type": "module",
   "scripts": {
     "dev": "bun --watch src/main.ts",

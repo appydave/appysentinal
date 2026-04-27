@@ -7,9 +7,9 @@
     },
     "packages/cli": {
       "name": "create-appysentinel",
-      "version": "0.1.0",
+      "version": "0.1.5",
       "bin": {
-        "create-appysentinel": "./dist/index.js",
+        "create-appysentinel": "dist/index.js",
       },
       "dependencies": {
         "@clack/prompts": "^0.8.0",
@@ -17,6 +17,7 @@
       "devDependencies": {
         "@types/node": "^22.10.0",
         "typescript": "^5.7.0",
+        "vitest": "^2.1.0",
       },
     },
     "packages/config": {
@@ -51,7 +52,7 @@
       },
     },
     "packages/template": {
-      "name": "@appydave/appysentinel-template",
+      "name": "{{PROJECT_NAME}}",
       "version": "0.1.0",
       "dependencies": {
         "@appydave/appysentinel-core": "workspace:*",
@@ -67,8 +68,6 @@
     "@appydave/appysentinel-config": ["@appydave/appysentinel-config@workspace:packages/config"],
 
     "@appydave/appysentinel-core": ["@appydave/appysentinel-core@workspace:packages/core"],
-
-    "@appydave/appysentinel-template": ["@appydave/appysentinel-template@workspace:packages/template"],
 
     "@clack/core": ["@clack/core@0.3.5", "", { "dependencies": { "picocolors": "^1.0.0", "sisteransi": "^1.0.5" } }, "sha512-5cfhQNH+1VQ2xLQlmzXMqUoiaH0lRBq9/CLW9lTyMbuKLC3+xEK01tHVvyut++mLOn5urSHmkm6I0Lg9MaJSTQ=="],
 
@@ -489,6 +488,8 @@
     "yocto-queue": ["yocto-queue@0.1.0", "", {}, "sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q=="],
 
     "zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
+
+    "{{PROJECT_NAME}}": ["{{PROJECT_NAME}}@workspace:packages/template"],
 
     "@eslint-community/eslint-utils/eslint-visitor-keys": ["eslint-visitor-keys@3.4.3", "", {}, "sha512-wpc+LXeiyiisxPlEkUzU6svyS1frIO3Mgxj1fdy7Pm8Ygzguax2N3Fa/D/ag1WqbOprdI+uY6wMUl8/a2G+iag=="],
 

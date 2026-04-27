@@ -41,8 +41,8 @@
       "slug": "recipe-catalog",
       "workspace": "documentation",
       "shape": "card-grid",
-      "status": "planned",
-      "data": "documentation/data/recipe-catalog.json",
+      "status": "active",
+      "data": "documentation/data/04-recipe-catalog.json",
       "view": "documentation/designs/04-recipe-catalog/index.html",
       "description": "One card per recipe — name, umbrella, status, what it solves, which pilot uses it."
     }

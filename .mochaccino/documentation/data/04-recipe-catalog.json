@@ -140,7 +140,7 @@
       "name": "snapshot-store",
       "umbrella": "Internal",
       "status": "planned",
-      "status_label": "Planned — not yet distinct from jsonl-store in spec §7.2",
+      "status_label": "Planned — documented in spec §7.2",
       "summary": "Single overwriting JSON file via atomic-write. AppyRadar pattern — the whole state is one document.",
       "how": "AtomicWrite on each collection cycle. Fast reads (single JSON.parse), no compaction needed.",
       "deps": [],

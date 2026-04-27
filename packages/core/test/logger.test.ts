@@ -14,4 +14,15 @@ describe('createLogger', () => {
     const child = parent.child({ component: 'test' });
     expect(child.level).toBe('warn');
   });
+
+  it('extra bindings are applied to the root logger', () => {
+    const log = createLogger({ name: 'bound', level: 'silent', bindings: { machine: 'test-box' } });
+    expect(log.level).toBe('silent');
+    expect(typeof log.info).toBe('function');
+  });
+
+  it('defaults level to info when none supplied', () => {
+    const log = createLogger({ name: 'default-level' });
+    expect(log.level).toBe('info');
+  });
 });

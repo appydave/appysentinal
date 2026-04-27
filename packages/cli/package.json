@@ -1,6 +1,6 @@
 {
   "name": "create-appysentinel",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Scaffold AppySentinel projects — per-machine, observer-only telemetry collectors",
   "type": "module",
   "bin": {
@@ -13,7 +13,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json && chmod +x dist/index.js || true",
     "dev": "bun run src/index.ts",
-    "test": "echo 'cli has no automated tests yet' && exit 0",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "echo 'cli lint stub' && exit 0",
     "prepack": "cp -r ../template ./template",
@@ -25,7 +25,8 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
   },
   "engines": {
     "node": ">=20"
