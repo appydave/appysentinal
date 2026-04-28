@@ -1,61 +1,91 @@
 {
-  "workspace": "documentation",
-  "updated": "2026-04-27",
-  "designs": [
-    {
-      "id": "01-what-is-appysentinel",
-      "title": "What is AppySentinel",
-      "slug": "what-is-appysentinel",
-      "workspace": "documentation",
-      "shape": "intro",
-      "status": "active",
-      "data": "documentation/data/01-what-is-appysentinel.json",
-      "view": "documentation/designs/01-what-is-appysentinel/index.html",
-      "description": "Orientation page — headless rule, three umbrellas, three lifecycle moments, two pilots. First thing a new reader sees."
-    },
-    {
-      "id": "02-architecture-overview",
-      "title": "Architecture Overview",
-      "slug": "architecture-overview",
-      "workspace": "documentation",
-      "shape": "layer-stack",
-      "status": "active",
-      "data": "documentation/data/02-architecture-overview.json",
-      "view": "documentation/designs/02-architecture-overview/index.html",
-      "description": "Foundation primitives (7 baked + 4 planned) → Collect/Expose/Deliver umbrellas → Operational layer (template artifacts vs recipes)."
-    },
-    {
-      "id": "03-pattern-capability-matrix",
-      "title": "Pattern Capability Matrix",
-      "slug": "pattern-capability-matrix",
-      "workspace": "documentation",
-      "shape": "matrix",
-      "status": "active",
-      "data": "documentation/data/03-pattern-capability-matrix.json",
-      "view": "documentation/designs/03-pattern-capability-matrix/index.html",
-      "description": "Pattern × app grid with status indicators (baked / planned-core / template / recipe / future / out-of-scope). 46 tests, CI, Husky shown in header."
-    },
-    {
-      "id": "04-recipe-catalog",
-      "title": "Recipe Catalog",
-      "slug": "recipe-catalog",
-      "workspace": "documentation",
-      "shape": "card-grid",
-      "status": "active",
-      "data": "documentation/data/04-recipe-catalog.json",
-      "view": "documentation/designs/04-recipe-catalog/index.html",
-      "description": "One card per entry — name, umbrella, status, what it solves, which pilot uses it. launchd/systemd shown as template artifacts."
-    },
-    {
-      "id": "05-developer-workflow",
-      "title": "Developer Workflow",
-      "slug": "developer-workflow",
-      "workspace": "documentation",
-      "shape": "lifecycle-flow",
-      "status": "active",
-      "data": "documentation/data/05-developer-workflow.json",
-      "view": "documentation/designs/05-developer-workflow/index.html",
-      "description": "Three lifecycle moments (Scaffold/Build/Deploy), commands, Husky pre-push hook, GitHub Actions CI + publish pipeline, published package versions."
-    }
-  ]
+  "workspaces": ["documentation", "client"],
+  "updated": "2026-04-28",
+  "documentation": {
+    "designs": [
+      {
+        "id": "01-what-is-appysentinel",
+        "title": "What is AppySentinel",
+        "slug": "what-is-appysentinel",
+        "workspace": "documentation",
+        "shape": "intro",
+        "status": "active",
+        "data": "documentation/data/01-what-is-appysentinel.json",
+        "view": "documentation/designs/01-what-is-appysentinel/index.html",
+        "description": "Orientation — headless rule, three zones, three lifecycle moments, two pilots."
+      },
+      {
+        "id": "02-architecture-overview",
+        "title": "Architecture Overview",
+        "slug": "architecture-overview",
+        "workspace": "documentation",
+        "shape": "layer-stack",
+        "status": "active",
+        "data": "documentation/data/02-architecture-overview.json",
+        "view": "documentation/designs/02-architecture-overview/index.html",
+        "description": "Foundation primitives (7 baked + 4 planned) → Collect/Access/Deliver zones → CQRS-lite sub-layers → Operational layer."
+      },
+      {
+        "id": "03-pattern-capability-matrix",
+        "title": "Pattern Capability Matrix",
+        "slug": "pattern-capability-matrix",
+        "workspace": "documentation",
+        "shape": "matrix",
+        "status": "active",
+        "data": "documentation/data/03-pattern-capability-matrix.json",
+        "view": "documentation/designs/03-pattern-capability-matrix/index.html",
+        "description": "Pattern × app grid with status indicators (baked / planned-core / template / recipe / future / out-of-scope). 46 tests, CI, Husky shown in header."
+      },
+      {
+        "id": "04-recipe-catalog",
+        "title": "Recipe Catalog",
+        "slug": "recipe-catalog",
+        "workspace": "documentation",
+        "shape": "card-grid",
+        "status": "active",
+        "data": "documentation/data/04-recipe-catalog.json",
+        "view": "documentation/designs/04-recipe-catalog/index.html",
+        "description": "One card per recipe — name, zone, status, what it solves, which pilot uses it. launchd/systemd shown as template artifacts."
+      },
+      {
+        "id": "05-developer-workflow",
+        "title": "Developer Workflow",
+        "slug": "developer-workflow",
+        "workspace": "documentation",
+        "shape": "lifecycle-flow",
+        "status": "active",
+        "data": "documentation/data/05-developer-workflow.json",
+        "view": "documentation/designs/05-developer-workflow/index.html",
+        "description": "Three lifecycle moments (Scaffold/Build/Deploy), commands, Husky pre-push hook, GitHub Actions CI + publish pipeline, published package versions."
+      }
+    ]
+  },
+  "client": {
+    "synthesis_source": "documentation",
+    "audience": "clients and AI-aware stakeholders",
+    "designs": [
+      {
+        "id": "01-what-appysentinel-does",
+        "title": "What AppySentinel Does",
+        "slug": "what-appysentinel-does",
+        "workspace": "client",
+        "shape": "intro",
+        "status": "active",
+        "data": "client/data/01-what-appysentinel-does.json",
+        "view": "client/designs/01-what-appysentinel-does/index.html",
+        "description": "What it is, what problem it solves, the three zones in plain language, and a case study."
+      },
+      {
+        "id": "02-capabilities-and-fit",
+        "title": "Capabilities & Fit",
+        "slug": "capabilities-and-fit",
+        "workspace": "client",
+        "shape": "card-grid",
+        "status": "active",
+        "data": "client/data/02-capabilities-and-fit.json",
+        "view": "client/designs/02-capabilities-and-fit/index.html",
+        "description": "Three zones from a buyer perspective — available/planned capability cards and a good-fit/not-fit guide."
+      }
+    ]
+  }
 }

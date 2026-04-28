@@ -20,8 +20,8 @@ Updated as we go. New patterns get added when we discover them; matrix cells get
 |-----|------|------|--------|
 | AppyRadar (legacy) | Reference / pre-split | `~/dev/ad/apps/appyradar/` | Existing — Sentinel + Viewer conflated in one repo. `audit.ts` is the data half; `hotel-live.html` / Mochaccino panels / Baku app are the viewer half. |
 | AppyRadar Sentinel | Pilot 1 (active) | `github.com/appydave/appyradar-sentinal` | Built on AppySentinel. SSH-central orchestration across 5 machines. Stress-test for C2 + I2 + E3. Graduation tracking: `docs/graduation-candidates.md` in that repo. |
-| AppyRadar Viewer | Out of scope (here) | TBD — split from legacy | Separate project; consumes the Sentinel via API / MCP expose. |
-| SS Data Query Sentinel | Pilot 2 (planned) | TBD under `~/dev/clients/supportsignal/` | To be built on AppySentinel. Source for stressing the SQL-diff + MCP-expose pattern. |
+| AppyRadar Viewer | Out of scope (here) | TBD — split from legacy | Separate project; consumes the Sentinel via the Access zone (API / MCP). |
+| SS Data Query Sentinel | Pilot 2 (planned) | TBD under `~/dev/clients/supportsignal/` | To be built on AppySentinel. Source for stressing the SQL-diff + MCP-binding pattern. |
 | AngelEye (legacy) | Reference / deferred pilot | `~/dev/ad/apps/angeleye/` | Existing — Sentinel + Viewer conflated. Future stress-test for multi-Sentinel push patterns; deferred as a third pilot for now. |
 
 ---
@@ -52,7 +52,7 @@ Updated as we go. New patterns get added when we discover them; matrix cells get
 | # | Pattern | Sentinel support | Notes |
 |---|---|---|---|
 | F1 | Always-on loop | ✅ baked | `createSentinel()` + `Lifecycle` (start/stop/reload, SIGINT/SIGTERM/SIGHUP) |
-| F2 | Headless / no UI | ✅ baked (architectural rule) | Spec §1. Visualisation is a separate Viewer app reached through the expose surface. |
+| F2 | Headless / no UI | ✅ baked (architectural rule) | Spec §1. Visualisation is a separate Viewer app reached through the Access zone. |
 | F3 | Sentinel/Viewer split | ❓ open | Architectural rule; not enforced by code. Should be guidance the install agent reinforces. |
 | F4 | Signal envelope (OTel-aligned) | ✅ baked | `signal.ts` — id, ts, schema_version, source, machine, sentinel_id, kind, name, severity, attributes, payload |
 | F5 | Internal pub/sub (SignalBus) | ✅ baked | `bus.ts` — emit / emitAndWait / on, isolated error handling |
@@ -69,7 +69,7 @@ Updated as we go. New patterns get added when we discover them; matrix cells get
 | C5 | Event-driven webhook receiver | 🛠️ recipe | `hook-receiver` — AngelEye pattern |
 | C6 | Event-driven log tail | 🛠️ recipe | `watch-logfile` |
 | C7 | Subprocess wrap | 🛠️ recipe | `subprocess-wrap` — long-running supervised subprocess |
-| C8 | Active MCP client | 🔮 future | Sentinel-as-MCP-client reading from another MCP server. The mirror of `mcp-expose`. One concrete use case: when a capability graduates from inline plugin to standalone sentinel (see Capability Graduation section), the host sentinel replaces its SSH-scraping collector with a C8 client that speaks to the graduated sentinel's expose surface. Defer until first graduation event. |
+| C8 | Active MCP client | 🔮 future | Sentinel-as-MCP-client reading from another MCP server. The mirror of `mcp-binding`. One concrete use case: when a capability graduates from inline plugin to standalone sentinel (see Capability Graduation section), the host sentinel replaces its SSH-scraping collector with a C8 client that speaks to the graduated sentinel's Access zone. Defer until first graduation event. |
 | C10 | Ingest gesture | 🛠️ recipe | A Collect sub-category for capabilities that pull from external data sources (wearables, file feeds, external services) rather than reading machine state directly. Ingest gestures graduate faster than point-metric collectors because they represent full domains (transcripts, events, files). Example: OMI wearable transcript ingestion in AppyRadar Sentinel (`github.com/appydave/appyradar-sentinal/blob/main/src/collectors/parsers.ts`). Graduation trigger: when the domain has its own enrichment pipeline or storage needs beyond what the host sentinel should own. |
 | C9 | Snapshot capture | 🛠️ recipe | `snapshot-capture` — combine signals into structured snapshot. AppyRadar pattern. |
 
@@ -83,7 +83,7 @@ Per Anthropic's API/CLI/MCP framework. Mature Sentinels ship all three bindings.
 | A2 | CLI binding | 🛠️ recipe | `cli-binding`. Local-first developer composition (pipe to jq / grep, on-machine agent loops). Thin adapter; routes to `query/`. |
 | A3 | MCP binding | 🛠️ recipe | `mcp-binding`. PoC validated 2026-04-27 (as `mcp-expose`). Design confirmed: **read-only layer over snapshot-store** — MCP server reads the snapshot file, does not touch collectors or live systems. Layering: `collector → sentinel-latest.json → MCP binding → agents`. Data-age field is first-class on every response (agents need to know how fresh data is). Tool granularity: summary tool + detail tool + domain-specific aggregated tools. One command-like tool (`trigger_collect`) is acceptable — spawns a subprocess, does not mutate machine data; observer-only invariant holds. Full spec: `appyradar-sentinal-safe/docs/mcp-surface.md`. |
 | A4 | Query layer | 🛠️ recipe | `query-layer` — `src/access/query/` convention, returns `QueryResult<T>`. Pure functions over snapshot data. No transport knowledge. Called by bindings. |
-| A5 | Command layer | 🛠️ recipe | `command-layer` — `src/access/command/` convention, sentinel-only writes. Config changes, triggered collections, pause/resume. Never mutates observed systems. |
+| A5 | Command layer | 🛠️ recipe | `command-layer` — `src/access/command/` convention, sentinel-only writes. Commands control the Sentinel itself — never the systems it observes. Examples: trigger an immediate collection; add a host to fleet config; adjust a polling schedule. Command functions are stateless — effects reach the collection loop via files in `state/` (commands write, loop reads). No shared memory between command layer and loop. See spec §7.3 for `state/` directory convention and `investigateMachine` pattern. |
 
 ### Deliver (zone 3 — §7.4)
 
@@ -93,7 +93,7 @@ Per Anthropic's API/CLI/MCP framework. Mature Sentinels ship all three bindings.
 | D2 | File-relay | 🛠️ recipe | `file-relay` — rsync / Syncthing / network mount |
 | D3 | Supabase push | 🛠️ recipe | `supabase-push` |
 | D4 | OTLP push | 🛠️ recipe | `otlp-push` — translate Signal → OTLP |
-| D5 | Socket.io emit (deliver role) | 🛠️ recipe | Push to a remote Socket.io server. Deliver role only — Socket.io's expose role removed (Viewer concern). |
+| D5 | Socket.io emit (deliver role) | 🛠️ recipe | Push to a remote Socket.io server. Deliver role only — Socket.io as an Access binding removed (Viewer concern). |
 | D6 | Multi-Sentinel push-to-central | 🔮 future | "5 Sentinels each on a host pushing to a central aggregator." NOT validated by either pilot. AppyRadar dodges via SSH-from-one. Defer until a real use case demands per-host collection. |
 
 ### Internal (storage + enrichment — §7.2 / §7.5)
@@ -144,7 +144,7 @@ Architectural doctrine for how capabilities move through the AppySentinel ecosys
 | Stage | Name | What it means | How the host sentinel talks to it |
 |-------|------|---------------|----------------------------------|
 | **1** | Inline collector | Capability lives inside the host sentinel as a direct SSH / file / API collector | Direct function call within `collectMachine()` or equivalent |
-| **2** | Standalone sentinel | Capability has its own always-on process, its own lifecycle, and its own expose surface | Via the graduated sentinel's expose surface — MCP (C8), REST (E1), or CLI (E2), whichever the host needs |
+| **2** | Standalone sentinel | Capability has its own always-on process, its own lifecycle, and its own Access zone | Via the graduated sentinel's Access zone — MCP (C8), REST (A1), or CLI (A2), whichever the host needs |
 | **3** | Recipe | Pattern proven across two or more independent pilots; extracted into AppySentinel for scaffolding | Generated into future sentinels by `configure-sentinel`; no longer a runtime relationship |
 
 ### Promotion triggers
@@ -154,13 +154,13 @@ Architectural doctrine for how capabilities move through the AppySentinel ecosys
 
 ### Inter-sentinel communication (Stage 2+)
 
-When a capability graduates to a standalone sentinel, the host sentinel speaks to it via its expose surface. The expose surface is not prescribed — it depends on what the host needs:
+When a capability graduates to a standalone sentinel, the host sentinel speaks to it via its Access zone. The binding is not prescribed — it depends on what the host needs:
 
 - **MCP** — for agent / Claude integration (pattern C8)
-- **REST API** — for programmatic consumption (pattern E1)  
-- **CLI** — for local scripting and composability (pattern E2)
+- **REST API** — for programmatic consumption (pattern A1)
+- **CLI** — for local scripting and composability (pattern A2)
 
-**Key invariant**: once a capability has its own expose surface, the host sentinel never SSH-scrapes its internals. The expose surface is the contract.
+**Key invariant**: once a capability has its own Access zone, the host sentinel never SSH-scrapes its internals. The Access zone is the contract.
 
 ### Ingest gestures and graduation pressure
 
@@ -224,6 +224,12 @@ Synthesised from pattern × app — patterns the pilots need that AppySentinel d
 6. **Sentinel/Viewer split guidance (F3)** — Not a recipe but an install-agent rule. Both legacy apps violate it; both pilots must enforce it. Capture as a §1 architectural commitment + install-agent prompt.
 7. **Security tier model (X4–X6)** — All three cells are 🚧 or ❓ across both pilots. Needs a spec §7.8 once we riff on it. Tailscale-default + bearer-token covers most of David's footprint.
 
+8. **Multi-machine fleet deployment** — No tooling for installing, configuring, or upgrading Sentinels across a fleet. The intended architecture is one Sentinel per machine, each self-reporting local state. AppyRadar's SSH-orchestration is a workaround for this gap, not the target design. Long-term fix: fleet install tooling (Ansible, or a future `configure-sentinel` fleet command). See spec §1 and §11.
+
+9. **MCP registration at user scope** — The `claude mcp add` command defaults to project scope, meaning the MCP server only appears when Claude Code is opened inside that specific project folder. Sentinels are fleet/machine tools, not project tools — they should be registered at user scope so they are available in any Claude Code session regardless of working directory. The scaffold documentation and any generated README instructions must specify `--scope user` explicitly. See Scaffold Recommendations §S1 below.
+
+10. **install-service scripts missing from scaffold** — `install-service.sh`, `uninstall-service.sh`, and the launchd plist template currently exist only in `appyradar-sentinal`. Every Sentinel needs them. They should be a scaffold output from `create-appysentinel` so new projects get them automatically. See Scaffold Recommendations §S2 below.
+
 What's deferred (no current pilot validates):
 
 - **D6** Multi-Sentinel push-to-central — revisit when AngelEye becomes a pilot or AppyRadar genuinely needs per-host collection.
@@ -232,10 +238,63 @@ What's deferred (no current pilot validates):
 
 ---
 
+## Scaffold Recommendations
+
+Things `create-appysentinel` should emit by default, currently missing from the scaffold template.
+
+### S1 — MCP registration at user scope
+
+**Problem.** When a developer follows generated README instructions and runs `claude mcp add <sentinel-name> -- bun /path/to/mcp.ts`, Claude Code registers the server at project scope by default. The MCP tools only appear when Claude Code is opened inside that project folder. Sentinels are not project tools — they run on a machine, observe a machine, and should be queryable from any Claude Code session on that machine.
+
+**Correct command.**
+
+```bash
+claude mcp add --scope user <sentinel-name> -- bun /absolute/path/to/src/access/bindings/mcp.ts
+```
+
+Note: the path must be absolute. Relative paths break when Claude Code is opened from a different working directory.
+
+**What needs to change in the scaffold.**
+
+- The generated `README.md` (or `docs/getting-started.md`) must show `--scope user` in the registration command, not the bare `claude mcp add` form.
+- The `configure-sentinel` skill (Layer 2 agent) must emit `--scope user` when it prints or runs the registration step.
+- Any `scripts/register-mcp.sh` helper (if generated) must include `--scope user`.
+
+**Validation.** After registration, running `claude mcp list` from a directory outside the project should show the sentinel's tools. If it doesn't, the server is registered at project scope, not user scope.
+
+---
+
+### S2 — install-service scripts in scaffold template
+
+**Problem.** `install-service.sh`, `uninstall-service.sh`, and the launchd plist template currently live only in `github.com/appydave/appyradar-sentinal`. Every Sentinel that reaches Deployed mode (spec §9.3) needs them. Without them, the developer has to hand-author a plist and load it manually — error-prone and not documented.
+
+**Pattern (from appyradar-sentinal).** The scripts use three placeholder tokens substituted at install time:
+
+| Token | Value |
+|-------|-------|
+| `{{PROJECT_DIR}}` | Absolute path to the project root |
+| `{{BUN_PATH}}` | Output of `which bun` |
+| `{{HOME_DIR}}` | `$HOME` |
+
+`install-service.sh` reads these from the environment or derives them, writes `~/Library/LaunchAgents/com.appydave.<project-name>.plist` (macOS) or the equivalent systemd unit path (Linux), and loads the service. `uninstall-service.sh` unloads and removes the file.
+
+**What needs to change in the scaffold.**
+
+- `create-appysentinel` should emit `scripts/install-service.sh`, `scripts/uninstall-service.sh`, and `scripts/launchd.plist.template` (macOS) / `scripts/systemd.service.template` (Linux) as part of the base scaffold output — not as an opt-in recipe, because every Sentinel that graduates to Deployed mode needs them.
+- The project name substitution (`com.appydave.<project-name>`) should use the sentinel name provided at scaffold time.
+- The `register-as-launchd` recipe (§7.6 / O1) should reference these scaffold-emitted scripts rather than generating its own.
+
+**Reference implementation.** `github.com/appydave/appyradar-sentinal/scripts/` — extract the pattern from here when updating the scaffold template.
+
+---
+
 ## Change log
 
 | Date | Change |
 |------|--------|
+| 2026-04-28 | Added Scaffold Recommendations section (S1: MCP user-scope registration; S2: install-service scripts in scaffold template). Gap items 9 and 10 added to gap summary referencing S1/S2. |
+| 2026-04-28 | A5 Command layer: added file-based signal pattern (state/ directory, stateless commands, loop as single stateful actor). References spec §7.3 additions. |
+| 2026-04-28 | Vocabulary sweep: all residual "expose surface" → "Access zone"; E1/E2 → A1/A2 in capability graduation section. A5 Command layer notes enriched with concrete examples. Gap #8 (multi-machine fleet deployment) added. Single-host framing corrected in spec §1 (one-per-machine is the intended design; AppyRadar SSH is a workaround). |
 | 2026-04-28 | v0.2.0 vocabulary refactor: Expose → Access (zone 2). E1/E2/E3 renamed A1/A2/A3 (`api-binding`, `cli-binding`, `mcp-binding`). Added A4 query-layer, A5 command-layer. All boundary umbrella references updated to zones. |
 | 2026-04-27 | Added Capability Graduation section (three-stage lifecycle, inter-sentinel communication, ingest gesture graduation pressure). Added C10 Ingest gesture pattern. Added GitHub path reference convention. Updated C8 note to reference graduation. Updated capability matrix: AR Sentinel pilot 1 promoted from 🚧 to ✓ on F1-F6, C2, C9, C10, E3, I2, I5. AppyRadar Sentinel now has real GitHub path. |
 | 2026-04-27 | C2 / I2 / E3 updated with PoC-validated design decisions from `appyradar-sentinal-safe/`. Gap summary updated to reflect C2/I2/E3 now have locked designs. |

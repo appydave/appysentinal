@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppySentinel — Mochaccino Workspaces</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@200..700&family=Roboto:ital,wght@0,100..900;1,100..900&family=Roboto+Mono&display=swap" rel="stylesheet">
+<!-- Mochaccino citation — workspace home page — rendered: 2026-04-28 -->
+<style>
+  :root {
+    --brand-brown: #342d2d;
+    --brand-gold: #ccba9d;
+    --brand-yellow: #ffde59;
+    --brand-amber: #c8841a;
+    --brand-muted: #7a6e5e;
+    --brand-near-white: #faf5ec;
+    --brand-surface: #f0ebe4;
+    --brand-linen: #e8e0d4;
+    --brand-border: #d4cdc4;
+    --brand-chrome: #1a1515;
+    --brand-dark-surface: #25201e;
+    --brand-blue: #2E91FC;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Roboto', sans-serif;
+    background: var(--brand-near-white);
+    color: var(--brand-brown);
+    min-height: 100vh;
+  }
+
+  /* Banner */
+  .mocha-banner {
+    background: var(--brand-dark-surface);
+    color: var(--brand-gold);
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.7rem;
+    padding: 0.35rem 1.5rem;
+    letter-spacing: 0.05em;
+  }
+
+  /* Hero */
+  .hero-outer {
+    background: var(--brand-dark-surface);
+    border-bottom: 3px solid var(--brand-yellow);
+    padding: 3rem 1.5rem 2.5rem;
+    text-align: center;
+  }
+
+  .hero-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.8rem, 6vw, 4.5rem);
+    letter-spacing: 0.04em;
+    color: #fff;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+
+  .hero-title span {
+    color: var(--brand-yellow);
+  }
+
+  .hero-subtitle {
+    font-family: 'Oswald', sans-serif;
+    font-size: 1rem;
+    font-weight: 300;
+    color: var(--brand-gold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .hero-desc {
+    font-size: 0.95rem;
+    color: var(--brand-gold);
+    opacity: 0.8;
+    max-width: 480px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* Layout */
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  .section {
+    padding: 3rem 0;
+  }
+
+  .section-label {
+    font-family: 'Oswald', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--brand-amber);
+    margin-bottom: 0.75rem;
+  }
+
+  .section-heading {
+    font-family: 'Oswald', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--brand-brown);
+    margin-bottom: 0.5rem;
+  }
+
+  .section-intro {
+    font-size: 0.9rem;
+    color: var(--brand-muted);
+    margin-bottom: 2rem;
+    max-width: 600px;
+    line-height: 1.6;
+  }
+
+  /* Workspace cards */
+  .workspace-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+  }
+
+  .workspace-card {
+    background: #fff;
+    border: 1px solid var(--brand-border);
+    border-radius: 6px;
+    overflow: hidden;
+    transition: box-shadow 0.2s ease;
+  }
+
+  .workspace-card:hover {
+    box-shadow: 0 4px 20px rgba(52,45,45,0.12);
+  }
+
+  .card-header {
+    padding: 1.25rem 1.5rem 1rem;
+    border-bottom: 1px solid var(--brand-linen);
+  }
+
+  .card-number {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    color: var(--brand-linen);
+    line-height: 1;
+    float: right;
+    margin-left: 1rem;
+  }
+
+  .card-workspace-label {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--brand-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.35rem;
+  }
+
+  .card-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--brand-brown);
+    line-height: 1.2;
+  }
+
+  .card-audience-tag {
+    display: inline-block;
+    margin-top: 0.5rem;
+    font-family: 'Oswald', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 0.2rem 0.6rem;
+    border-radius: 3px;
+    background: var(--brand-linen);
+    color: var(--brand-muted);
+  }
+
+  .card-body {
+    padding: 1rem 1.5rem;
+  }
+
+  .card-description {
+    font-size: 0.875rem;
+    color: var(--brand-muted);
+    line-height: 1.6;
+    margin-bottom: 1rem;
+  }
+
+  .card-meta {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .meta-item {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--brand-muted);
+  }
+
+  .meta-item strong {
+    color: var(--brand-brown);
+  }
+
+  /* Synthesis badge */
+  .synthesis-note {
+    font-size: 0.78rem;
+    color: var(--brand-amber);
+    background: #fdf6ec;
+    border: 1px solid #f0d8a8;
+    border-radius: 4px;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+  }
+
+  .synthesis-note::before {
+    content: '⟵ ';
+    font-weight: 700;
+  }
+
+  /* View list */
+  .view-list {
+    list-style: none;
+    margin-bottom: 1rem;
+  }
+
+  .view-list li {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.3rem 0;
+    border-bottom: 1px solid var(--brand-linen);
+    font-size: 0.8rem;
+  }
+
+  .view-list li:last-child {
+    border-bottom: none;
+  }
+
+  .view-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    color: var(--brand-amber);
+    min-width: 1.5rem;
+  }
+
+  .view-name {
+    color: var(--brand-brown);
+    flex: 1;
+  }
+
+  .view-status {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--brand-muted);
+    text-transform: uppercase;
+  }
+
+  /* CTA */
+  .card-footer {
+    padding: 1rem 1.5rem;
+    background: var(--brand-surface);
+    border-top: 1px solid var(--brand-linen);
+  }
+
+  .gallery-link {
+    display: inline-block;
+    font-family: 'Oswald', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--brand-brown);
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    background: var(--brand-yellow);
+    border-radius: 3px;
+    transition: opacity 0.15s;
+  }
+
+  .gallery-link:hover {
+    opacity: 0.85;
+  }
+
+  /* Relationship diagram */
+  .relationship-section {
+    background: var(--brand-linen);
+    border-radius: 6px;
+    padding: 1.5rem;
+    margin-bottom: 3rem;
+  }
+
+  .relationship-heading {
+    font-family: 'Oswald', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--brand-muted);
+    margin-bottom: 1rem;
+  }
+
+  .relationship-flow {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .rel-node {
+    background: #fff;
+    border: 1px solid var(--brand-border);
+    border-radius: 4px;
+    padding: 0.6rem 1rem;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--brand-brown);
+  }
+
+  .rel-node strong {
+    display: block;
+    font-family: 'Oswald', sans-serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+  }
+
+  .rel-node span {
+    font-size: 0.65rem;
+    color: var(--brand-muted);
+  }
+
+  .rel-arrow {
+    font-size: 1.2rem;
+    color: var(--brand-amber);
+    font-weight: bold;
+  }
+
+  .rel-label {
+    font-size: 0.65rem;
+    color: var(--brand-muted);
+    font-family: 'Roboto Mono', monospace;
+    text-align: center;
+  }
+
+  /* Footer */
+  footer {
+    background: var(--brand-dark-surface);
+    color: var(--brand-gold);
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.7rem;
+    padding: 1rem 1.5rem;
+    text-align: center;
+    opacity: 0.8;
+  }
+</style>
+</head>
+<body>
+
+<div class="mocha-banner">Mocha — Workspace Home — 2026-04-28</div>
+
+<div class="hero-outer">
+  <h1 class="hero-title"><span>Appy</span>Sentinel</h1>
+  <p class="hero-subtitle">Mochaccino Workspaces</p>
+  <p class="hero-desc">Two views of the same system — one for builders, one for clients and stakeholders.</p>
+</div>
+
+<div class="container">
+
+  <section class="section">
+    <div class="section-label">Workspaces</div>
+    <h2 class="section-heading">Choose your audience</h2>
+    <p class="section-intro">The documentation workspace answers "how is it built". The client workspace answers "what does it do for me". Same system, different frame.</p>
+
+    <div class="workspace-grid">
+
+      <!-- Documentation workspace -->
+      <div class="workspace-card">
+        <div class="card-header">
+          <span class="card-number">01</span>
+          <div class="card-workspace-label">documentation/</div>
+          <div class="card-title">Developer Documentation</div>
+          <span class="card-audience-tag">Builders &amp; technical readers</span>
+        </div>
+        <div class="card-body">
+          <p class="card-description">Architecture, patterns, and recipes — for developers building on AppySentinel or evaluating it as a foundation. Answers: how is this structured, what primitives exist, and what's the workflow?</p>
+          <div class="card-meta">
+            <span class="meta-item"><strong>5</strong> views</span>
+            <span class="meta-item"><strong>5</strong> active</span>
+            <span class="meta-item"><strong>canonical source</strong></span>
+          </div>
+          <ul class="view-list">
+            <li><span class="view-num">01</span><span class="view-name">What is AppySentinel</span><span class="view-status">active</span></li>
+            <li><span class="view-num">02</span><span class="view-name">Architecture Overview</span><span class="view-status">active</span></li>
+            <li><span class="view-num">03</span><span class="view-name">Pattern Capability Matrix</span><span class="view-status">active</span></li>
+            <li><span class="view-num">04</span><span class="view-name">Recipe Catalog</span><span class="view-status">active</span></li>
+            <li><span class="view-num">05</span><span class="view-name">Developer Workflow</span><span class="view-status">active</span></li>
+          </ul>
+        </div>
+        <div class="card-footer">
+          <a href="documentation/designs/index.html" class="gallery-link">Open gallery →</a>
+        </div>
+      </div>
+
+      <!-- Client workspace -->
+      <div class="workspace-card">
+        <div class="card-header">
+          <span class="card-number">02</span>
+          <div class="card-workspace-label">client/</div>
+          <div class="card-title">Client Views</div>
+          <span class="card-audience-tag">Clients &amp; AI-aware stakeholders</span>
+        </div>
+        <div class="card-body">
+          <p class="card-description">What AppySentinel does, why it matters, and whether it fits your situation — framed for decision-makers and tech-forward clients who don't need to know how it's built.</p>
+          <div class="card-meta">
+            <span class="meta-item"><strong>2</strong> views</span>
+            <span class="meta-item"><strong>2</strong> active</span>
+            <span class="meta-item"><strong>synthesis</strong></span>
+          </div>
+          <div class="synthesis-note">Synthesises from developer documentation</div>
+          <ul class="view-list">
+            <li><span class="view-num">01</span><span class="view-name">What AppySentinel Does</span><span class="view-status">active</span></li>
+            <li><span class="view-num">02</span><span class="view-name">Capabilities &amp; Fit</span><span class="view-status">active</span></li>
+          </ul>
+        </div>
+        <div class="card-footer">
+          <a href="client/designs/index.html" class="gallery-link">Open gallery →</a>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Relationship diagram -->
+    <div class="relationship-section">
+      <div class="relationship-heading">Workspace relationship</div>
+      <div class="relationship-flow">
+        <div class="rel-node">
+          <strong>documentation/</strong>
+          <span>canonical source · 5 views</span>
+        </div>
+        <div style="text-align:center">
+          <div class="rel-arrow">→</div>
+          <div class="rel-label">synthesises from</div>
+        </div>
+        <div class="rel-node">
+          <strong>client/</strong>
+          <span>audience-driven synthesis · 2 views</span>
+        </div>
+      </div>
+      <p style="margin-top:1rem; font-size:0.78rem; color:var(--brand-muted); line-height:1.6;">
+        When developer documentation data changes, check the <code style="font-family:'Roboto Mono',monospace; font-size:0.72rem; background:var(--brand-linen); padding:0.1rem 0.3rem; border-radius:2px;">sync_check</code> fields in <code style="font-family:'Roboto Mono',monospace; font-size:0.72rem; background:var(--brand-linen); padding:0.1rem 0.3rem; border-radius:2px;">client/data/</code> to identify which client files need updating.
+      </p>
+    </div>
+
+  </section>
+
+</div>
+
+<footer>
+  AppySentinel Mochaccino — 2 workspaces · 7 views total · rendered 2026-04-28
+</footer>
+
+</body>
+</html>

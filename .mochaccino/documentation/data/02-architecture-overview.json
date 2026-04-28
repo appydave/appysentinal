@@ -1,10 +1,10 @@
 {
   "meta": {
     "id": "architecture-overview",
-    "version": "1.2.0",
+    "version": "1.2.3",
     "extracted": "2026-04-26",
-    "last_updated": "2026-04-27",
-    "prompt": "Medium refresh — foundation layer: 4 planned-but-not-yet-built additions (health probe, dataDir, PID file, self-telemetry); operational layer: launchd/systemd promoted to template artifacts, pm2/docker remain as recipes"
+    "last_updated": "2026-04-28",
+    "prompt": "Patch — Access layer: added tunneling note (Tailscale Funnel for CoWork / remote agent access)"
   },
   "title": "Architecture Overview",
   "subtitle": "How an AppySentinel is composed — and why each layer exists",
@@ -120,14 +120,33 @@
       ]
     },
     {
-      "id": "expose",
-      "label": "Expose — Sentinel is readable",
-      "description": "The Sentinel makes itself queryable. Others come to it and pull what they need. Primarily local — Sentinels are not internet-facing services. The consumer is typically a local AI agent, developer tool, or dashboard on the same machine or tailnet.",
-      "open_decision": "Expose is currently read-only by default. Whether it should also accept writes (local control surface) is an open design decision — write capability belongs in this umbrella as an opt-in, not a default.",
+      "id": "access",
+      "label": "Access — bidirectional interface",
+      "description": "The Access zone is how the Sentinel makes itself usable. It is bidirectional by design. Design pattern: CQRS-lite — Query is the read side, Command is the write side. Bindings are thin protocol adapters that own no logic. Primarily local — Sentinels are not internet-facing services. Remote access (e.g. Claude CoWork) is achieved via tunneling — Tailscale Funnel is the recommended approach: one command exposes a local port at a stable https://<machine>.ts.net URL with no changes to the Sentinel.",
+      "sub_layers": [
+        {
+          "id": "bindings",
+          "label": "Bindings",
+          "path": "src/access/bindings/",
+          "description": "Thin protocol adapters. Own no logic — translate between protocol format and the query/command layer. Three bindings follow Anthropic's API/CLI/MCP framework."
+        },
+        {
+          "id": "query",
+          "label": "Query",
+          "path": "src/access/query/",
+          "description": "Read logic. Pure functions over snapshot data. Return QueryResult<T> — data + generated_at + data_age_ms + stale. No transport knowledge. Called by any binding."
+        },
+        {
+          "id": "command",
+          "label": "Command",
+          "path": "src/access/command/",
+          "description": "Sentinel self-management. Commands control the Sentinel itself — never the systems it observes. Examples: trigger an immediate collection; add a host to fleet config; adjust a polling schedule. Command functions are stateless: they read/write files in state/ and return. The collection loop reads state/ at the top of each tick. No shared memory between command layer and loop — the filesystem is the signal channel."
+        }
+      ],
       "items": [
-        { "name": "api-expose", "description": "HTTP REST via Hono. The foundation surface — reachable by any HTTP client, browser, or script. Start here." },
-        { "name": "cli-expose", "description": "Pipe-friendly shell interface. For local dev composition (pipe to jq, grep) and on-machine agent loops." },
-        { "name": "mcp-expose", "description": "MCP server. Native surface for AI agent consumers. The right choice when the primary consumer is a Claude or other MCP-aware agent." }
+        { "name": "api-binding", "description": "HTTP REST via Hono. Thin adapter; routes to query/ or command/. The foundation surface — reachable by any HTTP client, browser, or script." },
+        { "name": "cli-binding", "description": "Pipe-friendly shell interface. Thin adapter; routes to query/. For local dev composition (pipe to jq, grep) and on-machine agent loops." },
+        { "name": "mcp-binding", "description": "MCP server. Thin adapter; routes to query/ or command/. Native surface for AI agent consumers." }
       ]
     },
     {

@@ -8,11 +8,11 @@
   },
   "title": "What is AppySentinel?",
   "subtitle": "A boilerplate for always-on local data coordinators",
-  "definition": "AppySentinel is a single-host, observer-only, always-on local data coordinator boilerplate. A Sentinel runs on one host — collecting data from local sources and from remote machines via collectors, normalising it into a common envelope, exposing it for queries, and delivering it outward to downstream systems.",
+  "definition": "AppySentinel is a single-host, observer-only, always-on local data coordinator boilerplate. A Sentinel runs on one host — collecting data from local sources and from remote machines via collectors, normalising it into a common envelope, making it accessible via the Access zone (API / CLI / MCP), and delivering it outward to downstream systems.",
   "core_rules": [
     {
       "rule": "Headless",
-      "detail": "No UI. Visualisation is a separate Viewer application that consumes the Sentinel through its expose surface. Conflating data coordination with visualisation is the failure mode AppySentinel exists to prevent."
+      "detail": "No UI. Visualisation is a separate Viewer application that consumes the Sentinel through its access surface. Conflating data coordination with visualisation is the failure mode AppySentinel exists to prevent."
     },
     {
       "rule": "Observer-only",
@@ -24,10 +24,10 @@
     },
     {
       "rule": "Single-host",
-      "detail": "A Sentinel runs on one host. It can collect data from remote machines via SSH, HTTP, and other protocols — it does not need to be installed on every machine it observes. One Sentinel per machine is an option, not a requirement."
+      "detail": "A Sentinel runs on one host. The intended pattern is one Sentinel per machine — each knowing its local environment. A Sentinel can also reach out to remote sources (databases, APIs, other servers via SSH), but that is a capability, not the primary design. The AppyRadar SSH-orchestration (one Sentinel polling 5 machines) is a pragmatic shortcut around multi-machine install complexity, not the target architecture."
     }
   ],
-  "three_umbrellas": [
+  "three_zones": [
     {
       "name": "Collect",
       "direction": "inbound",
@@ -35,9 +35,9 @@
       "colour_hint": "blue"
     },
     {
-      "name": "Expose",
+      "name": "Access",
       "direction": "bidirectional",
-      "description": "Let the outside world read what the Sentinel knows — via API (HTTP/Hono), CLI (pipe-friendly), or MCP (AI-agent native).",
+      "description": "Bidirectional interface layer. Query = read (pure functions over snapshots). Command = write (sentinel self-management only, opt-in). Bindings are thin adapters: api-binding, cli-binding, mcp-binding.",
       "colour_hint": "green"
     },
     {
@@ -76,7 +76,7 @@
     },
     {
       "name": "SS Data Query Sentinel",
-      "description": "SupportSignal DB mirror — polls Supabase by updated_at watermark, exposes local mirror via MCP for AI agents. Proves the sql-diff-collector + mcp-expose pattern.",
+      "description": "SupportSignal DB mirror — polls Supabase by updated_at watermark, exposes local mirror via MCP for AI agents. Proves the sql-diff-collector + mcp-binding pattern.",
       "path": "~/dev/clients/supportsignal/sentinal.supportsignal"
     }
   ]

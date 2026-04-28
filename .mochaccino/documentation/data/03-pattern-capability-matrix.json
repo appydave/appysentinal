@@ -65,12 +65,14 @@
       ]
     },
     {
-      "id": "expose",
-      "label": "Expose",
+      "id": "access",
+      "label": "Access",
       "patterns": [
-        { "id": "E1", "name": "API expose (HTTP/Hono)",  "sentinel_support": "recipe",  "apps": { "ar-legacy": "no",   "ar-sentinel": "planned", "ss-sentinel": "planned", "ae-legacy": "uses" } },
-        { "id": "E2", "name": "CLI expose",              "sentinel_support": "recipe",  "apps": { "ar-legacy": "no",   "ar-sentinel": "unknown", "ss-sentinel": "unknown", "ae-legacy": "no" } },
-        { "id": "E3", "name": "MCP expose",              "sentinel_support": "recipe",  "apps": { "ar-legacy": "no",   "ar-sentinel": "planned", "ss-sentinel": "planned", "ae-legacy": "unknown" } }
+        { "id": "A1", "name": "API binding (HTTP/Hono)",  "sentinel_support": "recipe",  "apps": { "ar-legacy": "no",   "ar-sentinel": "planned", "ss-sentinel": "planned", "ae-legacy": "uses" } },
+        { "id": "A2", "name": "CLI binding",              "sentinel_support": "recipe",  "apps": { "ar-legacy": "no",   "ar-sentinel": "unknown", "ss-sentinel": "unknown", "ae-legacy": "no" } },
+        { "id": "A3", "name": "MCP binding",              "sentinel_support": "recipe",  "apps": { "ar-legacy": "no",   "ar-sentinel": "planned", "ss-sentinel": "planned", "ae-legacy": "unknown" } },
+        { "id": "A4", "name": "Query layer",              "sentinel_support": "recipe",  "apps": { "ar-legacy": "no",   "ar-sentinel": "planned", "ss-sentinel": "planned", "ae-legacy": "no" }, "note": "src/access/query/ — pure functions, returns QueryResult<T>" },
+        { "id": "A5", "name": "Command layer",            "sentinel_support": "recipe",  "apps": { "ar-legacy": "no",   "ar-sentinel": "planned", "ss-sentinel": "no",      "ae-legacy": "no" }, "note": "src/access/command/ — sentinel self-management only, opt-in" }
       ]
     },
     {
@@ -116,10 +118,11 @@
     { "priority": 1, "gap": "orchestrator-ssh recipe",          "blocks": "AppyRadar Sentinel pilot" },
     { "priority": 2, "gap": "sql-diff-collector recipe",        "blocks": "SS Sentinel pilot — new pattern, not yet in spec §7.1" },
     { "priority": 3, "gap": "snapshot-store recipe",            "blocks": "AppyRadar pattern — not yet distinct from jsonl-store in spec §7.2" },
-    { "priority": 4, "gap": "mcp-expose recipe",                "blocks": "Both pilots want this" },
-    { "priority": 5, "gap": "api-expose recipe",                "blocks": "AppyRadar Sentinel → Baku app + hotel-live.html consumers" },
+    { "priority": 4, "gap": "mcp-binding recipe",               "blocks": "Both pilots want this" },
+    { "priority": 5, "gap": "api-binding recipe",               "blocks": "AppyRadar Sentinel → Baku app + hotel-live.html consumers" },
     { "priority": 6, "gap": "health probe (core)",              "blocks": "Pilots need liveness endpoint before registering as services", "type": "core" },
     { "priority": 7, "gap": "dataDir + PID file (core)",        "blocks": "Recipe authors need a stable data location; launchd restart safety", "type": "core" },
-    { "priority": 8, "gap": "self-telemetry heartbeat (core)",  "blocks": "Every Sentinel should emit its own health signals — currently manual", "type": "core" }
+    { "priority": 8, "gap": "self-telemetry heartbeat (core)",  "blocks": "Every Sentinel should emit its own health signals — currently manual", "type": "core" },
+    { "priority": 9, "gap": "multi-machine fleet deployment",   "blocks": "No tooling for installing, configuring, or upgrading Sentinels across a fleet. AppyRadar SSH-orchestration is a workaround for this gap. Long-term: one Sentinel per machine, each self-reporting local state. Tooling TBD — could be Ansible, could be a future AppySentinel CLI command.", "type": "open-design" }
   ]
 }

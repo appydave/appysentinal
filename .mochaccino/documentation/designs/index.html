@@ -217,7 +217,7 @@
 </head>
 <body>
 
-<div class="mocha-banner">Mocha — Documentation Gallery — 2026-04-27</div>
+<div class="mocha-banner">Mocha — Documentation Gallery — 2026-04-28</div>
 
 <div id="app"><div class="loading">Loading…</div></div>
 
@@ -231,7 +231,7 @@ fetch('../../mockups.json')
   });
 
 function render(manifest) {
-  const designs = manifest.designs;
+  const designs = manifest.documentation.designs;
   const active  = designs.filter(d => d.status === 'active').length;
   const planned = designs.filter(d => d.status === 'planned').length;
   const shelved = designs.filter(d => d.status === 'shelved').length;
@@ -271,7 +271,7 @@ function render(manifest) {
         </div>
         <div class="header-meta">
           ${active} active &nbsp;·&nbsp; ${planned} planned &nbsp;·&nbsp; ${shelved} shelved<br>
-          workspace: ${manifest.workspace}
+          workspace: documentation
         </div>
       </header>
 
@@ -279,7 +279,7 @@ function render(manifest) {
 
       <div class="page-footer">
         <div class="footer-note">
-          appysentinel · documentation workspace · 2026-04-27 &nbsp;·&nbsp;
+          appysentinel · documentation workspace · 2026-04-28 &nbsp;·&nbsp;
           <a class="github-link" href="https://github.com/appydave/appysentinal" target="_blank">github.com/appydave/appysentinal</a>
         </div>
       </div>

@@ -22,13 +22,13 @@
       --layer-foundation: #342d2d;
       --layer-collect:    #1a5fa0;
       --layer-internal:   #5a4a3a;
-      --layer-expose:     #2a7a5a;
+      --layer-access:     #2a7a5a;
       --layer-deliver:    #a05a1a;
       --layer-ops:        #4a3d6e;
 
       --collect-bg:    #eaf2fc;
       --internal-bg:   #f4f0eb;
-      --expose-bg:     #e6f5ee;
+      --access-bg:     #e6f5ee;
       --deliver-bg:    #fdf0dc;
       --ops-bg:        #f0edf9;
       --foundation-bg: #e8e4df;
@@ -312,6 +312,53 @@
       margin-bottom: 4px;
     }
 
+    /* Sub-layers diagram (Access zone CQRS) */
+    .sub-layers-diagram {
+      margin-bottom: 16px;
+      padding: 14px 16px;
+      background: var(--access-bg);
+      border-left: 3px solid var(--layer-access);
+    }
+    .sub-layers-label {
+      font-family: 'Oswald', sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--layer-access);
+      margin-bottom: 10px;
+    }
+    .sub-layers-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .sub-layer-card {
+      background: #fff;
+      padding: 10px 12px;
+      border-top: 2px solid var(--layer-access);
+    }
+    .sub-layer-name {
+      font-family: 'Oswald', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--layer-access);
+      margin-bottom: 3px;
+    }
+    .sub-layer-path {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 9.5px;
+      color: var(--brand-muted);
+      margin-bottom: 6px;
+      letter-spacing: 0.02em;
+    }
+    .sub-layer-desc {
+      font-size: 11.5px;
+      color: var(--brand-brown);
+      line-height: 1.5;
+    }
+
     .storage-rule {
       margin-bottom: 12px;
       padding: 10px 14px;
@@ -359,9 +406,9 @@
       font-size: 9px;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      background: var(--expose-bg);
-      color: var(--layer-expose);
-      border: 1px solid var(--layer-expose);
+      background: var(--access-bg);
+      color: var(--layer-access);
+      border: 1px solid var(--layer-access);
       padding: 1px 6px;
       margin-bottom: 6px;
     }
@@ -395,10 +442,10 @@
     .layer-internal .layer-label { color: var(--layer-internal); }
     .layer-internal .item-name { color: var(--layer-internal); }
 
-    .layer-expose .layer-stripe { background: var(--layer-expose); }
-    .layer-expose .layer-title-bar { background: var(--expose-bg); }
-    .layer-expose .layer-label { color: var(--layer-expose); }
-    .layer-expose .item-name { color: var(--layer-expose); }
+    .layer-access .layer-stripe { background: var(--layer-access); }
+    .layer-access .layer-title-bar { background: var(--access-bg); }
+    .layer-access .layer-label { color: var(--layer-access); }
+    .layer-access .item-name { color: var(--layer-access); }
 
     .layer-deliver .layer-stripe { background: var(--layer-deliver); }
     .layer-deliver .layer-title-bar { background: var(--deliver-bg); }
@@ -438,7 +485,7 @@
 </head>
 <body>
 
-<div class="mocha-banner">Mocha — Architecture Overview — 2026-04-27</div>
+<div class="mocha-banner">Mocha — Architecture Overview — 2026-04-28</div>
 <div id="app"><div class="loading">Loading…</div></div>
 
 <script>
@@ -454,7 +501,7 @@ const layerClass = {
   foundation: 'layer-foundation',
   collect:    'layer-collect',
   internal:   'layer-internal',
-  expose:     'layer-expose',
+  access:     'layer-access',
   deliver:    'layer-deliver',
   operational:'layer-ops'
 };
@@ -508,8 +555,28 @@ function renderPlannedAdditions(layer) {
   `;
 }
 
+function renderSubLayers(layer) {
+  if (!layer.sub_layers || !layer.sub_layers.length) return '';
+  const subItems = layer.sub_layers.map(sl => `
+    <div class="sub-layer-card">
+      <div class="sub-layer-name">${sl.label}</div>
+      <div class="sub-layer-path">${sl.path}</div>
+      <div class="sub-layer-desc">${sl.description}</div>
+    </div>
+  `).join('');
+  return `
+    <div class="sub-layers-diagram">
+      <div class="sub-layers-label">CQRS-Lite Sub-layers</div>
+      <div class="sub-layers-grid">${subItems}</div>
+    </div>
+  `;
+}
+
 function renderLayerExtras(layer) {
   let extras = '';
+  if (layer.sub_layers) {
+    extras += renderSubLayers(layer);
+  }
   if (layer.storage_rule) {
     extras += `<div class="storage-rule">${layer.storage_rule}</div>`;
   }
@@ -524,7 +591,7 @@ function render(d) {
     { color: 'var(--layer-foundation)', label: 'Foundation — baked in (packages/core)' },
     { color: 'var(--layer-collect)',    label: 'Collect — inbound boundary' },
     { color: 'var(--layer-internal)',   label: 'Internal — storage & enrichment' },
-    { color: 'var(--layer-expose)',     label: 'Expose — read surface (API / CLI / MCP)' },
+    { color: 'var(--layer-access)',     label: 'Access — bidirectional interface (API / CLI / MCP)' },
     { color: 'var(--layer-deliver)',    label: 'Deliver — outbound boundary' },
     { color: 'var(--layer-ops)',        label: 'Operational — runtime supervisors' },
   ];
@@ -586,7 +653,7 @@ function render(d) {
 
       <div class="page-footer">
         <div class="footer-note">
-          appysentinel · documentation workspace · 2026-04-27 &nbsp;·&nbsp;
+          appysentinel · documentation workspace · 2026-04-28 &nbsp;·&nbsp;
           <a class="github-link" href="https://github.com/appydave/appysentinal" target="_blank">github.com/appydave/appysentinal</a>
         </div>
       </div>

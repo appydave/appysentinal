@@ -6,11 +6,15 @@ Visualise AppySentinel's knowledge — architecture, patterns, and recipes — f
 ## Workspace type
 parallel
 
+## Canonical source
+`docs/` — the spec and pattern catalogue are the source of truth. Mochaccino data files are downstream syntheses. When content changes, update `docs/` first, then refresh the relevant `data/*.json` files, then re-render.
+
 ## Active workspaces
 
-| Workspace | Status | Description |
-|-----------|--------|-------------|
-| `documentation` | active | Static knowledge visualisation — architecture, patterns, recipes. Driven by docs + code structure. |
+| Workspace | Status | Description | Relationship |
+|-----------|--------|-------------|-------------|
+| `documentation` | active | Developer-facing views — architecture, patterns, recipes. | Canonical synthesis from `docs/` |
+| `client` | active | Client/stakeholder views — what it does, fit guide. | Audience-driven synthesis from `documentation/data/` |
 
 ## Planned workspaces
 

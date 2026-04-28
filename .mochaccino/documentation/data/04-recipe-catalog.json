@@ -9,7 +9,7 @@
   "title": "Recipe Catalog",
   "subtitle": "Optional capabilities installed per project — core ships none of these",
   "intro": "Recipes are the optional layer of AppySentinel. Core ships slim (pino, ulid, zod only). Every recipe is pulled in by the install agent only when selected. A recipe owns its own dependencies.",
-  "umbrellas": ["Collect", "Expose", "Deliver", "Internal", "Operational"],
+  "umbrellas": ["Collect", "Access", "Deliver", "Internal", "Operational"],
   "status_values": ["planned", "proven-bespoke", "future", "template-artifact"],
   "recipes": [
     {
@@ -92,37 +92,59 @@
       "pilot": "AppyRadar Sentinel"
     },
     {
-      "id": "api-expose",
-      "name": "api-expose",
-      "umbrella": "Expose",
+      "id": "api-binding",
+      "name": "api-binding",
+      "umbrella": "Access",
       "status": "planned",
       "status_label": "Planned — foundation per Anthropic API/CLI/MCP ladder",
-      "summary": "HTTP REST interface via Hono. Exposes stored data and health endpoints to browser clients and non-agent consumers.",
-      "how": "Hono on Bun.serve. Routes: GET /health, GET /signals, GET /snapshot, GET /status.",
+      "summary": "HTTP REST binding via Hono. Thin adapter — routes to query/ or command/. Exposes stored data and health endpoints to browser clients and non-agent consumers.",
+      "how": "Hono on Bun.serve. Routes: GET /health, GET /signals, GET /snapshot, GET /status. Calls query layer for data-shaping.",
       "deps": ["hono"],
       "pilot": "AppyRadar Sentinel (Baku app + hotel-live.html need this)"
     },
     {
-      "id": "cli-expose",
-      "name": "cli-expose",
-      "umbrella": "Expose",
+      "id": "cli-binding",
+      "name": "cli-binding",
+      "umbrella": "Access",
       "status": "planned",
       "status_label": "Planned",
-      "summary": "Pipe-friendly CLI interface. Query the Sentinel from the terminal — compose with jq, grep, on-machine agent loops.",
+      "summary": "Pipe-friendly CLI binding. Thin adapter — routes to query/. Query the Sentinel from the terminal — compose with jq, grep, on-machine agent loops.",
       "how": "Commands: sentinel status, sentinel signals [--last N], sentinel snapshot. Output: JSON or human-readable.",
       "deps": [],
       "pilot": null
     },
     {
-      "id": "mcp-expose",
-      "name": "mcp-expose",
-      "umbrella": "Expose",
+      "id": "mcp-binding",
+      "name": "mcp-binding",
+      "umbrella": "Access",
       "status": "planned",
       "status_label": "Planned — default surface for AI agent consumers",
-      "summary": "MCP server. Exposes Sentinel data as MCP tools that AI agents can call natively.",
-      "how": "MCP SDK server. Tools mirror the api-expose routes but shaped for agent consumption.",
+      "summary": "MCP server binding. Thin adapter — routes to query/ or command/. Exposes Sentinel data as MCP tools that AI agents can call natively.",
+      "how": "MCP SDK server. Tools call the query layer for data-shaping. One command-like tool (trigger_collect) routes to command/.",
       "deps": ["@modelcontextprotocol/sdk"],
       "pilot": "SS Data Query Sentinel (primary surface), AppyRadar Sentinel"
+    },
+    {
+      "id": "query-layer",
+      "name": "query-layer",
+      "umbrella": "Access",
+      "status": "planned",
+      "status_label": "Planned — src/access/query/ convention",
+      "summary": "Read logic layer. Pure functions over snapshot data — no transport knowledge. Returns QueryResult<T> with freshness metadata (data_age_ms, stale).",
+      "how": "Functions in src/access/query/. Called by bindings. QueryResult<T> imported from @appydave/appysentinel-core.",
+      "deps": [],
+      "pilot": "AppyRadar Sentinel, SS Data Query Sentinel"
+    },
+    {
+      "id": "command-layer",
+      "name": "command-layer",
+      "umbrella": "Access",
+      "status": "planned",
+      "status_label": "Planned — src/access/command/ convention, opt-in",
+      "summary": "Sentinel self-management layer. Config changes, triggered collections, pause/resume. Never mutates observed systems.",
+      "how": "Functions in src/access/command/. Called by bindings. Observer-only invariant is preserved — commands control the sentinel, not the systems it watches.",
+      "deps": [],
+      "pilot": "AppyRadar Sentinel"
     },
     {
       "id": "jsonl-store",

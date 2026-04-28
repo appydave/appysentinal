@@ -10,11 +10,11 @@
 
 AppySentinel is a **single-host, observer-only, always-on local data coordinator boilerplate**. A Sentinel runs on one host. It **collects** data from local sources and from remote machines via collectors like `orchestrator-ssh` — it does not need to be installed on every machine it observes. It normalises data into a common envelope, **makes it accessible via the Access zone** (API / CLI / MCP), and **delivers** it outward to zero or more downstream systems. It runs standalone by default — no dashboard or central system is required for it to function.
 
-Running one Sentinel per observed machine is an option for advanced deployments, not a default requirement. The AppyRadar pilot demonstrates the simpler pattern: one Sentinel on one orchestrator host, collecting from five remote machines over SSH.
+The intended pattern is one Sentinel per machine — each knowing its local environment deeply. The AppyRadar pilot uses a pragmatic shortcut: one Sentinel on one orchestrator host collects from five remote machines over SSH, working around the absence of fleet-wide install tooling. This shortcut is not the target architecture; it is a workaround for the fleet deployment gap (see §11 and the pattern catalogue gap summary).
 
 Major use cases include telemetry collection, structured snapshots, database mirroring, and event capture. OpenTelemetry alignment is preserved at the Signal envelope (see §6).
 
-AppySentinel is **headless**. It has no UI. Visualisation, dashboards, and control planes are separate applications that consume a Sentinel through its expose surfaces (API / CLI / MCP). Conflating data coordination with visualisation is the failure mode AppySentinel exists to prevent.
+AppySentinel is **headless**. It has no UI. Visualisation, dashboards, and control planes are separate applications that consume a Sentinel through its Access zone surfaces (API / CLI / MCP). Conflating data coordination with visualisation is the failure mode AppySentinel exists to prevent.
 
 AppySentinel is **not** AppyStack. AppyStack builds web apps (RVETS: React + Vite + Express + TypeScript + Socket.io). AppySentinel builds always-on local data coordinators — headless, long-running, lightweight. Viewers that visualise Sentinel data are built separately (typically on AppyStack) and are not part of this boilerplate.
 
@@ -69,7 +69,7 @@ Rules:
 |---------|--------|
 | Language | TypeScript (strict) |
 | Runtime | Bun recommended; Node supported (core code stays Node-compatible) |
-| HTTP / expose | Hono on `Bun.serve` (or Node equivalent) |
+| HTTP / access binding | Hono on `Bun.serve` (or Node equivalent) |
 | Validation | Zod |
 | Logging | Pino |
 | File watching | chokidar |
@@ -397,6 +397,16 @@ src/access/
 - ❌ `rebootMachine('mary')` — not a command; violates observer-only
 - ❌ `deployApp(...)` — not a command; sentinel is not a control plane for observed systems
 
+**Command functions are stateless.** They do not hold references to runtime objects or running loop state. Effects that need to reach the collection loop — pausing a machine, requesting an early collection — are communicated via files in a `state/` directory. The collection loop reads these files at the top of each tick. This keeps command functions pure (read file → modify → write file → return result) and the loop as the single stateful actor. The pattern mirrors query functions reading from `snapshots/` — both sides of Access communicate through the filesystem, not through shared memory. This is the correct answer to the "commands need to reach loop state" problem; shared memory between the command layer and the loop is the wrong answer.
+
+**`state/` directory convention.** Sentinel projects carry a `state/` directory at the project root (sibling to `snapshots/`). It is gitignored — these are runtime signals, not config. Standard files:
+- `paused.json` — array of machine names the loop should skip. Written by `pauseCollection` / `resumeCollection`. Read by the loop at the top of each tick.
+- `trigger.json` — one-shot early collection request `{ requested_at, machine }`. Written by `triggerCollection`. The loop consumes it at the top of the next tick, deletes the file, runs the collection immediately. One-shot: consumed once, gone.
+
+The loop is the only reader of `state/`. Commands write; the loop reads. No other coupling needed.
+
+**`investigateMachine` command pattern.** Runs a one-off collection for a single machine and patches the result into the fleet snapshot immediately, without waiting for the next scheduled tick. Pattern: read config → call the collect function directly (the same pure function the loop uses) → patch snapshot → return result. Because the collect function is a pure function over machine config, `investigateMachine` requires no special runtime access. Use cases: machine onboarding (call from `addMachine`), post-maintenance verification, debugging a specific machine's current state.
+
 **QueryResult<T>.** All query functions return `QueryResult<T>` (exported from `@appydave/appysentinel-core`). The `data_age_ms` and `stale` fields are first-class — agents need freshness metadata to decide whether to trigger a recollect.
 
 Following Anthropic's API/CLI/MCP framework (see §7.0 footnote). Mature Sentinels ship all three bindings; new ones start with whichever surface matches the primary consumer environment.
@@ -408,6 +418,29 @@ Following Anthropic's API/CLI/MCP framework (see §7.0 footnote). Mature Sentine
 | `mcp-binding` | MCP server exposing resources / tools / prompts. Thin adapter; routes to `query/` or `command/`. Standardised, portable surface for AI agents and cross-client integrations. |
 
 Real-time push to subscribers (Socket.io / SSE) is a Viewer concern. Viewers subscribe to a Sentinel via whichever surface they prefer; they may run their own real-time fan-out on top. Not part of the boilerplate's access set.
+
+**MCP stdio binding — stdout is poison.** MCP stdio uses stdout exclusively for its JSON-RPC protocol. Any output to stdout from the MCP process — logger output, `console.log`, startup messages — corrupts the protocol and crashes the connection, often silently. This is the most common MCP failure mode in practice.
+
+Rules:
+1. The `mcp-binding` entry point must never import or start `main.ts`. It is a standalone process.
+2. All logging inside the MCP process must go to stderr: `pino({ level: 'info' }, pino.destination(2))`.
+3. `claude mcp add` must point at the binding file directly, never at `src/main.ts`.
+4. For on-demand Sentinels (no persistent collection loop), `trigger_collect` must call `collector.collect()` and await it — not write a trigger file and return. There is no background loop to pick up the trigger file.
+
+**Port allocation.** When wiring an `api-binding`, check `~/.config/appydave/apps.json` before choosing a port — this is the AppyDave ecosystem's static port registry, shared by AppyStack apps, tools, and Sentinels. Sentinel API ports are reserved in the `5082+` range (increment by +10 per Sentinel). Configure via `.env` (`SENTINEL_API_PORT`). Register the port in `apps.json` before starting the project so downstream consumers can discover the endpoint without runtime lookup. MCP stdio bindings have no port; only HTTP (`api-binding`) needs a port reservation.
+
+**Remote access / CoWork integration.** Sentinels bind to localhost by default — this is intentional. Claude CoWork and other remote AI agents cannot reach `localhost` directly; they require an `https://` URL. To expose a local Sentinel to a remote agent without changing its local-first design, use a tunnel:
+
+| Option | Effort | Stable URL | Notes |
+|--------|--------|-----------|-------|
+| **Tailscale Funnel** | Low | Yes (persistent) | Recommended. Already in use across the AppyDave fleet. One command: `tailscale funnel <port>` → stable `https://<machine-name>.ts.net` URL. Works immediately with CoWork. |
+| **ngrok** | Low | No (free tier) | URL changes on restart unless you pay. Useful for quick one-off testing. |
+| **Cloudflare Tunnel** | Medium | Yes | Free stable subdomain. More config. Worth it for persistent multi-machine setups. |
+| **VPS reverse proxy** | High | Yes | Full control. Overkill for personal fleet tools. |
+
+Tailscale Funnel is the recommended default for the AppyDave ecosystem. Steps: `tailscale funnel <PORT>` (enable once per port), then give the `https://<machine-name>.ts.net` URL to CoWork. The Sentinel itself needs no changes — Funnel proxies from the internet-facing Tailscale endpoint to the local port. Disable with `tailscale funnel --bg <PORT> off` when done.
+
+This pattern keeps the Sentinel local-first (no change to `api-binding` or any config) while allowing remote AI agents to reach it on demand.
 
 ### 7.4 Deliver recipes (5)
 
@@ -533,7 +566,108 @@ The suggested default is **`mcp-binding`** for projects whose primary consumer i
 
 ---
 
-## 9. Upgrade Story
+## 9. Sentinel Lifecycle
+
+A Sentinel moves through four operational moments. Scaffold and Install (§8) cover the first. This section covers the rest.
+
+| Moment | How | When to use |
+|--------|-----|-------------|
+| **Scaffold / Install** | `npx create-appysentinel` + agent interview | Once per project |
+| **Development mode** | `bun src/main.ts` (Ctrl-C to stop) | Actively wiring recipes or changing collectors |
+| **Graduation gate** | See below | When the snapshot is trustworthy and something is consuming it |
+| **Deployed mode** | `bash scripts/install-service.sh` | Running unattended on a permanent host |
+
+### 9.1 Development mode
+
+Run manually to observe output and iterate:
+
+```bash
+bun src/main.ts
+```
+
+The process blocks in the foreground. SIGINT (Ctrl-C) triggers graceful shutdown — queues flush, handles close, the lifecycle's `stop()` runs. Use development mode while actively wiring recipes, changing collectors, or debugging signal shapes. Do not leave it running unattended; that is Deployed mode's job.
+
+**Test mode is separate.** `bun run test` / `bun run test:watch` runs Vitest and does not start the live loop. Tests must call `sentinel.start()` and `sentinel.stop()` themselves, and must pass `installSignalHandlers: false` to `createSentinel()` to prevent signal handler leaks. See the project CLAUDE.md for the test harness pattern.
+
+### 9.2 Graduation gate
+
+A Sentinel is ready to deploy when two conditions are both true:
+
+1. **The snapshot is trustworthy.** Running `bun src/main.ts` and inspecting the output produces correct, stable data. The signal shapes look right. No unexpected errors or missing fields.
+2. **Something is consuming the snapshot** other than you inspecting it manually — an MCP binding is registered and an agent is querying it, or an HTTP client is polling the API, or another app is reading the file.
+
+The graduation trigger is the shift from "I check it manually" to "something else depends on it." Until that shift happens, Deployed mode adds operational overhead with no benefit. After it happens, always-on persistence is load-bearing — missing a collection cycle is now a real problem, not just an inconvenience.
+
+Track graduation state per-pilot in `docs/graduation-candidates.md` (see pattern catalogue, Capability Graduation section).
+
+### 9.3 Deployed mode
+
+Register the Sentinel as a persistent background service:
+
+```bash
+bash scripts/install-service.sh
+```
+
+On macOS this writes a launchd plist to `~/Library/LaunchAgents/` and loads it. On Linux the equivalent is a systemd unit. Once deployed:
+
+- The service starts automatically on login (launchd) or boot (systemd).
+- Crashes trigger automatic restart.
+- Logs go to the path specified in the plist (typically `logs/sentinel.log` in the project directory).
+
+**After a code change**, the service must be restarted to pick it up:
+
+```bash
+# macOS — replace <project-name> with the value in the plist label
+launchctl kickstart -k gui/$(id -u)/com.appydava.<project-name>
+```
+
+The `kickstart -k` flag kills the running instance and starts a fresh one. The Sentinel's graceful shutdown (SIGTERM handler) runs before the new process starts, so in-flight writes complete cleanly.
+
+**MCP registration scope.** When registering the Sentinel's MCP binding with Claude Code, use `--scope user`, not the default project scope:
+
+```bash
+claude mcp add --scope user <name> -- bun /path/to/sentinel/src/main.ts mcp
+```
+
+Default project scope means the binding is only available when Claude Code is opened in that project folder. User scope makes the tools available in every Claude Code session on the machine — the correct behaviour for a machine-resident daemon. Sentinels are not project-specific tools; their MCP surfaces should follow the developer everywhere.
+
+**Install scripts are project-level.** `scripts/install-service.sh` and `scripts/uninstall-service.sh` are local to each scaffolded project. They are intentionally not a shared recipe in core — the service name, plist label, and paths are Sentinel-specific. Improvements to one project's install scripts must be applied to other projects manually until a `register-as-launchd` recipe is promoted to core (planned, not yet scheduled).
+
+### 9.4 Dev-while-deployed workflow
+
+When you need to actively iterate on a Sentinel that is already deployed as a service, unload the service first to avoid two processes fighting over the same files and ports:
+
+```bash
+# Unload — stops the service; does not delete the plist
+launchctl unload ~/Library/LaunchAgents/com.appydave.<project-name>.plist
+
+# Work manually
+bun src/main.ts
+
+# Reload when done
+launchctl load ~/Library/LaunchAgents/com.appydave.<project-name>.plist
+```
+
+Never run the manual process and the service simultaneously. They share the same snapshot file, state directory, and (if bound) port. Only one instance should own those at a time.
+
+### 9.5 On-demand deployment (no persistent service)
+
+Not every Sentinel needs to run continuously. A legitimate and clean deployment pattern is **on-demand**: the Sentinel runs only when invoked, completes its work, and exits. No launchd plist. No background process.
+
+This pattern suits Sentinels where:
+- Collection is triggered by an external caller (an AI agent calls `trigger_collect` via MCP, or a cron calls the CLI)
+- The mirror or snapshot already on disk is recent enough for most queries, and freshness is checked via `data_age_ms` in `QueryResult<T>`
+- The cost of maintaining a persistent daemon outweighs the benefit (e.g., collection happens a few times per day, not continuously)
+
+**How it works:** The MCP binding uses stdio transport — Claude Code or another agent starts the Sentinel process, the MCP handshake completes, tools are called, the process exits when the caller disconnects. A `trigger_collect` tool causes the Sentinel to run a full collection synchronously before returning.
+
+**State directory still applies.** Even in on-demand mode, commands must write to `state/trigger.json` — not because a background loop reads it, but because the `main.ts` startup sequence checks for a pending trigger and runs collection immediately if one is present. This makes the pattern composable: on-demand today, persistent service tomorrow, same code.
+
+**Graduation path.** On-demand → deployed service is a one-step upgrade: `bash scripts/install-service.sh`. The code does not change.
+
+---
+
+## 10. Upgrade Story
 
 **Upgrade is agentic (v1.1 priority, not v1).**
 
@@ -548,7 +682,7 @@ This is deferred to v1.1 so that v1 can ship the install agent first. The four-t
 
 ---
 
-## 10. Terminology & Naming
+## 11. Terminology & Naming
 
 | Term | Meaning |
 |------|---------|
@@ -564,7 +698,7 @@ Capitalisation: **Sentinel** (capitalised when referring to the identity), **Sig
 
 ---
 
-## 11. Non-Goals
+## 12. Non-Goals
 
 AppySentinel is not:
 
@@ -579,12 +713,12 @@ AppySentinel is not:
 
 ---
 
-## 12. Open Recipe Specs (Build Order)
+## 13. Open Recipe Specs (Build Order)
 
 Recipes to write next, in priority order. Each lands as a single `.md` file in the recipe catalogue and includes: purpose, interface, dependencies, generated code shape, composition notes.
 
 1. **`event-normaliser`** — the canonical reference for the Signal envelope + payload pattern. All other recipes reference this. Write first.
-2. **`mcp-interface`** — default interface, primary consumer surface. Needed for the install agent's smoke test.
+2. **`mcp-binding`** — default interface, primary consumer surface. Needed for the install agent's smoke test.
 3. **`watch-directory`** — canonical input recipe. Exercises chokidar, debounce, normalisation. Most visual and easiest to stress-test.
 4. **`jsonl-store`** — default storage recipe. Uses the atomic-write and serial-queue primitives from §5.
 5. **`http-push`** — default outbound transport. Exercises batching, retry, backoff.
@@ -593,13 +727,13 @@ After those five, the remaining recipes can be written in any order. `llm-classi
 
 ---
 
-## 13. Reference Implementations
+## 14. Reference Implementations
 
 Two sketches showing what common collectors look like when rebuilt on AppySentinel.
 
-### 13.1 AngelEye-style collector (hook receiver + JSONL store + classifier)
+### 14.1 AngelEye-style collector (hook receiver + JSONL store + classifier)
 
-**Recipes wired**: `hook-receiver` + `rest-interface` + `socketio-interface` + `jsonl-store` + `deterministic-classifier` + `heuristic-classifier` + `event-normaliser`.
+**Recipes wired**: `hook-receiver` + `api-binding` + `jsonl-store` + `deterministic-classifier` + `heuristic-classifier` + `event-normaliser`. (Socket.io fan-out is a Viewer concern — not an Access binding.)
 
 Shape:
 
@@ -610,8 +744,8 @@ import { hookReceiver } from './recipes/hook-receiver';
 import { jsonlStore } from './recipes/jsonl-store';
 import { deterministicClassifier } from './recipes/deterministic-classifier';
 import { heuristicClassifier } from './recipes/heuristic-classifier';
-import { mcpExpose } from './recipes/mcp-expose';
-import { apiExpose } from './recipes/api-expose';
+import { mcpBinding } from './recipes/mcp-binding';
+import { apiBinding } from './recipes/api-binding';
 
 const sentinel = await createSentinel({
   name: 'angeleye',
@@ -634,20 +768,20 @@ jsonlStore(sentinel, {
   partition: (signal) => signal.attributes?.session_id ?? 'default',
 });
 
-// Expose
-mcpExpose(sentinel, { /* resources, tools */ });
-apiExpose(sentinel, { port: 5051 });
+// Access: query via MCP + REST API
+mcpBinding(sentinel, { /* resources, tools */ });
+apiBinding(sentinel, { port: 5051 });
 // (Real-time fan-out via Socket.io is a Viewer concern — the AngelEye dashboard
-//  subscribes to the api-expose stream and runs its own socket layer.)
+//  subscribes to the api-binding stream and runs its own socket layer.)
 
 await sentinel.start();
 ```
 
 What the boilerplate gives this collector for free: Signal envelope, event bus, lifecycle, atomic writes, serial queue, Pino logger, Zod config.
 
-### 13.2 AppyRadar-style system monitor (orchestrator + snapshot + Supabase)
+### 14.2 AppyRadar-style system monitor (orchestrator + snapshot + Supabase)
 
-**Recipes wired**: `orchestrator-ssh` + `snapshot-capture` + `memory-buffer` + `supabase-push` + `mcp-interface` + `register-as-launchd`.
+**Recipes wired**: `orchestrator-ssh` + `snapshot-capture` + `memory-buffer` + `supabase-push` + `mcp-binding` + `register-as-launchd`.
 
 Shape:
 
@@ -658,7 +792,7 @@ import { orchestratorSSH } from './recipes/orchestrator-ssh';
 import { snapshotCapture } from './recipes/snapshot-capture';
 import { memoryBuffer } from './recipes/memory-buffer';
 import { supabasePush } from './recipes/supabase-push';
-import { mcpExpose } from './recipes/mcp-expose';
+import { mcpBinding } from './recipes/mcp-binding';
 
 const sentinel = await createSentinel({
   name: 'appyradar',
@@ -686,8 +820,8 @@ supabasePush(sentinel, {
   table: 'telemetry',
 });
 
-// Local expose
-mcpExpose(sentinel, { /* expose latest snapshot as a resource */ });
+// Access: query fleet snapshot via MCP
+mcpBinding(sentinel, { /* expose latest snapshot as a resource */ });
 
 await sentinel.start();
 
@@ -698,7 +832,7 @@ What changes from the AppyRadar PoC: SSH layer, status detection, envelope, and 
 
 ---
 
-## 14. What's Open
+## 15. What's Open
 
 Items explicitly not locked in v1 and deferred for follow-up:
 

@@ -1,10 +1,10 @@
 {
   "meta": {
     "id": "developer-workflow",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "extracted": "2026-04-27",
-    "last_updated": "2026-04-27",
-    "prompt": "Session 4 update — add vitest.config.ts, src/__tests__/sentinel.test.ts, .husky/pre-push to scaffold what_you_get; update test command note to distinguish scaffolded project vs monorepo; update pre_push_hook note to clarify ships in both; bump create-appysentinel to 0.1.7"
+    "last_updated": "2026-04-28",
+    "prompt": "Add Remote Access moment — tunneling options (Tailscale Funnel, ngrok, Cloudflare, VPS) for exposing local Sentinel ports to Claude CoWork and remote AI agents"
   },
   "title": "Developer Workflow",
   "subtitle": "From scaffold to always-on service — three distinct moments",
@@ -66,25 +66,67 @@
         { "os": "macOS",  "tool": "launchd",  "location": "~/Library/LaunchAgents/",       "note": "Service file: com.appysentinel.<name>.plist" },
         { "os": "Linux",  "tool": "systemd",  "location": "~/.config/systemd/user/",       "note": "User-level service — no sudo required" }
       ]
+    },
+    {
+      "id": "remote-access",
+      "label": "Remote Access",
+      "tagline": "Expose local ports to remote AI agents.",
+      "description": "Sentinels bind to localhost by default. Claude CoWork and other remote AI agents require an https:// URL — they cannot reach localhost directly. Use a tunnel to bridge the gap without changing the Sentinel's local-first design.",
+      "note": "The Sentinel itself needs no changes. The tunnel proxies from the public URL to the local port. Disable the tunnel when not in use.",
+      "options": [
+        {
+          "tool": "Tailscale Funnel",
+          "effort": "Low",
+          "stable_url": true,
+          "recommended": true,
+          "command": "tailscale funnel <PORT>",
+          "url_pattern": "https://<machine-name>.ts.net",
+          "note": "Recommended. Already in use across the AppyDave fleet. One command, persistent stable URL. Works immediately with CoWork. Disable with: tailscale funnel --bg <PORT> off"
+        },
+        {
+          "tool": "ngrok",
+          "effort": "Low",
+          "stable_url": false,
+          "recommended": false,
+          "command": "ngrok http <PORT>",
+          "url_pattern": "https://<random>.ngrok-free.app",
+          "note": "URL changes on restart (free tier). Useful for quick one-off testing."
+        },
+        {
+          "tool": "Cloudflare Tunnel",
+          "effort": "Medium",
+          "stable_url": true,
+          "recommended": false,
+          "command": "cloudflared tunnel --url http://localhost:<PORT>",
+          "url_pattern": "https://<name>.cfargotunnel.com",
+          "note": "Free stable subdomain. More configuration required. Worth it for persistent multi-machine setups."
+        },
+        {
+          "tool": "VPS reverse proxy",
+          "effort": "High",
+          "stable_url": true,
+          "recommended": false,
+          "note": "Full control. Overkill for personal fleet tools."
+        }
+      ]
     }
   ],
   "ci_pipeline": {
     "title": "CI / CD Pipeline",
-    "description": "GitHub Actions. Two workflows. Runs automatically — no manual steps.",
+    "description": "GitHub Actions. One workflow handles everything — no manual steps.",
     "workflows": [
       {
-        "name": "CI",
+        "name": "CI + Publish",
         "file": ".github/workflows/ci.yml",
         "trigger": "Every push to main + pull requests",
-        "steps": ["bun install", "bun run build", "bun run typecheck", "bun run test"],
-        "note": "Runs on Node.js 24 (pinned action versions). Green means all 46 tests pass and types are clean."
-      },
-      {
-        "name": "Publish",
-        "file": ".github/workflows/publish.yml",
-        "trigger": "git tag v* push",
-        "steps": ["Run CI first", "Publish each package to npm — idempotent (skips if version already exists)"],
-        "note": "Requires NPM_TOKEN secret. Granular Access Token — expires ~2026-07-27. Must rotate before expiry."
+        "steps": [
+          "bun install",
+          "bun run typecheck",
+          "bun run test",
+          "Auto-tag vX.Y.Z if version is new (main push only)",
+          "Publish each package to npm — idempotent (skips if version already exists)"
+        ],
+        "note": "Publish steps run only on main push, not PRs. GITHUB_TOKEN tag pushes don't trigger other workflows (GitHub security guard) — so publish runs inline after the tag step. Requires NPM_TOKEN secret: granular access token covering all three packages + appydave org. Expires ~90 days — rotate before expiry."
       }
     ],
     "published_packages": [

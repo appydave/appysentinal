@@ -22,8 +22,8 @@
 
       --collect-color: #1a6eb5;
       --collect-bg:    #eaf2fc;
-      --expose-color:  #2a7a5a;
-      --expose-bg:     #e6f5ee;
+      --access-color:  #2a7a5a;
+      --access-bg:     #e6f5ee;
       --deliver-color: #b5640f;
       --deliver-bg:    #fdf0dc;
     }
@@ -266,21 +266,21 @@
       align-items: center;
     }
 
-    .expose-block {
-      background: var(--expose-bg);
-      border: 2px solid var(--expose-color);
+    .access-block {
+      background: var(--access-bg);
+      border: 2px solid var(--access-color);
       padding: 14px 16px;
       text-align: center;
       width: 100%;
     }
 
-    .expose-block .umbrella-direction-tag {
-      color: var(--expose-color);
+    .access-block .umbrella-direction-tag {
+      color: var(--access-color);
       text-align: center;
     }
 
-    .expose-block .umbrella-name-large {
-      color: var(--expose-color);
+    .access-block .umbrella-name-large {
+      color: var(--access-color);
       font-size: 18px;
       margin-bottom: 0;
     }
@@ -288,7 +288,7 @@
     .vertical-arrow {
       width: 2px;
       height: 20px;
-      background: var(--expose-color);
+      background: var(--access-color);
       opacity: 0.5;
     }
 
@@ -353,7 +353,7 @@
 
     .moment-card:nth-child(1) { border-top: 3px solid var(--brand-amber); }
     .moment-card:nth-child(2) { border-top: 3px solid var(--collect-color); }
-    .moment-card:nth-child(3) { border-top: 3px solid var(--expose-color); }
+    .moment-card:nth-child(3) { border-top: 3px solid var(--access-color); }
 
     .moment-num {
       font-family: 'Oswald', sans-serif;
@@ -503,7 +503,7 @@
 </head>
 <body>
 
-<div class="mocha-banner">Mocha — What is AppySentinel — 2026-04-27</div>
+<div class="mocha-banner">Mocha — What is AppySentinel — 2026-04-28</div>
 
 <div id="app"><div class="loading">Loading…</div></div>
 
@@ -517,9 +517,9 @@ fetch('../../data/01-what-is-appysentinel.json')
   });
 
 function render(d) {
-  const collect  = d.three_umbrellas[0];
-  const expose   = d.three_umbrellas[1];
-  const deliver  = d.three_umbrellas[2];
+  const collect  = d.three_zones[0];
+  const access   = d.three_zones[1];
+  const deliver  = d.three_zones[2];
 
   const ruleItems = d.core_rules.map((r, i) => `
     <div class="rule-item">
@@ -569,7 +569,7 @@ function render(d) {
       </div>
 
       <div class="section">
-        <div class="section-heading">The Three Boundary Umbrellas</div>
+        <div class="section-heading">The Three Zones</div>
         <div class="umbrellas-layout">
 
           <div class="umbrella-panel collect">
@@ -579,9 +579,9 @@ function render(d) {
           </div>
 
           <div class="sentinel-column">
-            <div class="expose-block">
-              <div class="umbrella-direction-tag">↕ ${expose.direction}</div>
-              <div class="umbrella-name-large">${expose.name}</div>
+            <div class="access-block">
+              <div class="umbrella-direction-tag">↕ ${access.direction}</div>
+              <div class="umbrella-name-large">${access.name}</div>
             </div>
             <div class="vertical-arrow"></div>
             <div class="sentinel-core">
@@ -599,7 +599,7 @@ function render(d) {
 
         </div>
         <div class="umbrella-footnote">
-          Same technology can play different roles across umbrellas — role, not tech, picks the umbrella.
+          Same technology can play different roles across zones — role, not tech, picks the zone.
         </div>
       </div>
 
@@ -631,7 +631,7 @@ function render(d) {
       </div>
 
       <div class="page-footer">
-        <div class="footer-note">appysentinel · documentation workspace · 2026-04-27 &nbsp;·&nbsp; <a class="github-link" href="https://github.com/appydave/appysentinal" target="_blank">github.com/appydave/appysentinal</a></div>
+        <div class="footer-note">appysentinel · documentation workspace · 2026-04-28 &nbsp;·&nbsp; <a class="github-link" href="https://github.com/appydave/appysentinal" target="_blank">github.com/appydave/appysentinal</a></div>
       </div>
 
     </div>
