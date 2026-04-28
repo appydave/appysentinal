@@ -55,13 +55,16 @@ Visualisation is a separate Viewer application that reads from the Sentinel's ex
 
 **Rule**: bump the relevant `package.json` version(s) before committing. The three packages version independently — CLI, core, and config each have their own version. `PUBLISHED_VERSIONS` in `packages/cli/src/scaffold.ts` tracks the npm-published versions of **core and config only** — do not sync it to the CLI version number.
 
-**Publishing flow (fully automated — no manual tag step):**
+**Publishing flow (fully automated — no manual steps):**
 1. Bump the relevant `package.json` version(s) and commit.
 2. Push to `main`.
-3. CI (`.github/workflows/ci.yml`) runs tests + typecheck. If they pass, it auto-creates and pushes the git tag `vX.Y.Z` based on the CLI package version — **no manual tag step**.
-4. The tag push triggers `.github/workflows/publish.yml`, which publishes all three packages. Each package step has a skip-if-already-published guard, so unchanged packages are safely skipped.
+3. CI (`.github/workflows/ci.yml`) runs tests + typecheck. If they pass, on main push it:
+   - Creates and pushes the git tag `vX.Y.Z` (CLI version drives the tag) if it doesn't exist yet
+   - Publishes all three packages directly. Each step has a skip-if-already-published guard — unchanged packages are silently skipped.
 
-The tag is **repo-level** (not per-package). CLI version drives the tag. If you push to main without bumping a version, CI detects the tag already exists and skips tagging — idempotent.
+**Why CI publishes directly (not via tag trigger):** GitHub blocks cross-workflow triggers when the tag is created by `GITHUB_TOKEN` (security guard against recursive loops). Publish steps live in `ci.yml` alongside the tag step to work around this.
+
+If you push to main without bumping a version, every publish step skips silently — idempotent.
 
 ---
 
