@@ -66,6 +66,31 @@ Visualisation is a separate Viewer application that reads from the Sentinel's ex
 
 If you push to main without bumping a version, every publish step skips silently — idempotent.
 
+**npm token (`NPM_TOKEN` GitHub secret) — refresh every ~90 days:**
+
+The token is a granular access token on npm named `appysentinal-ci`. It expires ~90 days after creation. When it expires CI fails silently with a `404` (not an obvious "token expired" message) — see symptom below.
+
+**To refresh (exact steps):**
+1. npm.js.org → Account → Access Tokens → delete the old `appysentinal-ci` token
+2. Click **Generate New Token** → **Granular Access Token**
+3. Fill in:
+   - **Token name**: `appysentinal-ci`
+   - **Bypass 2FA**: checked (required for CI)
+   - **Packages and scopes → Permissions**: Read and write
+   - **Select packages**: "Only select packages and scopes" → add exactly these three:
+     - `create-appysentinel`
+     - `@appydave/appysentinel-config`
+     - `@appydave/appysentinel-core`
+   - **Organizations → Permissions**: Read and write
+   - **Organizations → Select organizations**: tick `appydave`
+   - **Expiration**: 90 days
+4. Verify Summary shows: "read and write access to 3 packages" and "read and write access to 1 organization"
+5. Click **Generate token** — copy the value immediately (shown once only)
+6. GitHub repo → Settings → Secrets and variables → Actions → `NPM_TOKEN` → Update → paste → Save secret
+7. Trigger CI: push any commit to main (or an empty commit: `git commit --allow-empty -m "chore: retrigger CI"`)
+
+**Symptom of a bad/expired token:** CI shows `404 Not Found - PUT registry.npmjs.org/@appydave/appysentinel-core` on a version that hasn't been published yet. Config and CLI steps skip silently (already-published guard fires); core fails because auth is checked on the first new write attempt.
+
 ---
 
 ## What Not To Do
