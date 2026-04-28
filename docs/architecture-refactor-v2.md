@@ -17,7 +17,7 @@ Read this file at the start of any session touching this refactor.
 | Umbrellas | **Zones** | Zones are named by direction of data flow. No metaphor needed. |
 | (unnamed) | **Bindings** | The thin protocol adapters within Access — MCP, HTTP, CLI. They own no logic. |
 | (inline in recipe) | **Query** | The read layer within Access. Pure functions over snapshot data. No transport knowledge. |
-| (future/deferred) | **Command** | The write layer within Access. Operates on the sentinel itself only. Never mutates observed machines. |
+| (future/deferred) | **Command** | Sentinel self-management. Controls the sentinel's own behaviour — config, schedule, triggers. Never mutates observed systems. |
 
 **Three zones: Collect / Access / Deliver**
 - **Collect** — data flows IN (unchanged, keep name)
@@ -46,9 +46,20 @@ The Access zone implements CQRS-lite:
 - We use the CQRS vocabulary and separation principle. We do NOT use full CQRS/event-sourcing — no separate read-model projections, no event replay.
 - The observer-only invariant is the Q-side-only constraint of CQRS stated as a first principle.
 
+**What Command is (important — easy to get wrong):**
+Commands control the Sentinel itself. They do not reach through to observed systems.
+- ✅ `addMachine({ name, host })` — adds a machine to the fleet config
+- ✅ `triggerCollection('mary')` — fires an immediate collection cycle outside the scheduled interval
+- ✅ `pauseCollection('mary')` — suspends collection on one machine
+- ✅ `reloadConfig()` — reloads the sentinel's config file without restart
+- ❌ `rebootMachine('mary')` — not a command, not a sentinel concern, violates observer-only
+- ❌ `deployApp('mary', ...)` — not a command, sentinel is not a control plane for observed systems
+
+Every Sentinel will have a command layer. Sentinels are headless — the command layer is how you manage them without editing config files directly. The 90/10 split (mostly read, some control) is correct, but the "some control" is not optional.
+
 **Canonical location in spec**: §7.3 Access zone, sub-section "Design pattern: CQRS-lite"
 
-### OpenTelemetry conventions
+### OpenTelemetry conventions (first-class design decision)
 
 We follow OTel conventions. We do not depend on OTel libraries.
 - Signal kinds (log, metric, event, state, span) align to OTel primitives
@@ -56,8 +67,14 @@ We follow OTel conventions. We do not depend on OTel libraries.
 - `ts` (ISO 8601) mirrors OTel timestamp convention
 - An `otlp-push` transport recipe can translate Signal → OTLP without loss
 
-**Must appear in two places:**
-1. `docs/appysentinel-spec.md` §4 (Tech Stack) — explicit design decision, not just a §6.3 aside
+This is not a footnote. It is a design constraint that shapes the Signal envelope and
+ensures Sentinels can participate in OTel-compatible observability stacks without
+a rewrite. Any change to the Signal envelope must be checked against OTel alignment.
+
+**Must appear in three places:**
+1. `docs/appysentinel-spec.md` §4 (Tech Stack) — named design decision alongside Bun/Hono/Zod
+2. `docs/appysentinel-spec.md` §6.3 — keep existing detail, but now referenced from §4 not buried
+3. `packages/template/CLAUDE.md` — one rule so it appears in every scaffolded project
 2. `packages/template/CLAUDE.md` — one-line rule so it appears in every scaffolded project
 
 ---
@@ -133,7 +150,7 @@ Replace "Three recipe categories (umbrellas)" section with:
 - **Collect** — data flows IN. Recipes in src/collect/.
 - **Access** — bidirectional interface layer. src/access/ has three sub-layers:
     - query/    — read logic. Pure functions over snapshots. Returns QueryResult<T>. No transport knowledge.
-    - command/  — write logic (opt-in). Operates on the sentinel only. Never mutates observed machines.
+    - command/  — sentinel self-management. Config changes, triggered collections, pause/resume. Never mutates observed systems.
     - bindings/ — thin protocol adapters. MCP, HTTP, CLI. Call query/ or command/, translate to protocol.
   Design pattern: CQRS-lite — Query is the read side, Command is the write side.
   CQRS applies to Access only. Collect and Deliver are separate patterns.
