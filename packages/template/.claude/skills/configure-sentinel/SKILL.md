@@ -15,6 +15,8 @@ description: |
 > below are informed by the AppyRadar PoC (2026-04-27). Generate recipe code
 > once the developer answers the questions — do not implement anything without
 > asking first.
+>
+> **Architecture note (CQRS-lite):** The Access zone (§7.3) separates Query (read logic in `src/access/query/`) from Command (write logic in `src/access/command/`). Bindings (`src/access/bindings/`) are thin protocol adapters that call into query/ or command/. CQRS applies to Access only — Collect and Deliver are separate patterns. Recipe names: `api-binding`, `cli-binding`, `mcp-binding`.
 
 ## Step 1 — Read project state
 
@@ -64,14 +66,20 @@ If yes → `mcp-expose` is the right expose surface. MCP responses must include 
 
 ### Q4 — How will this Sentinel be read?
 
-Choose zero or more expose surfaces:
+Choose zero or more bindings (`src/access/bindings/`). Each binding is a thin protocol adapter that routes to query/ or command/ — it owns no logic.
 
 | Option | What it does |
 |--------|-------------|
-| `mcp-expose` | **PoC-validated.** MCP server (stdio). Read-only over `snapshot-store`. Tool design: one summary tool, one detail tool, domain-specific aggregated tools. One command-like tool (`trigger_collect`) is acceptable — it spawns a subprocess and returns immediately; does not violate observer-only. Data-age field is first-class on every response. See `appyradar-sentinal-safe/docs/mcp-surface.md` for full tool surface spec. |
-| `api-expose` | Hono HTTP API with Zod + OpenAPI. Foundation surface; reachable by any HTTP client. |
-| `cli-expose` | Shell tool that queries the local Sentinel. For developer composition (pipe to jq/grep) and on-machine agent loops. |
-| `none-yet` | Skip expose for now; add later. |
+| `mcp-binding` | **PoC-validated.** MCP server (stdio). Read-only over `snapshot-store`. Tool design: one summary tool, one detail tool, domain-specific aggregated tools. One command-like tool (`trigger_collect`) is acceptable — it spawns a subprocess and returns immediately; does not violate observer-only. Data-age field is first-class on every response. See `appyradar-sentinal-safe/docs/mcp-surface.md` for full tool surface spec. |
+| `api-binding` | Hono HTTP API with Zod + OpenAPI. Foundation surface; reachable by any HTTP client. |
+| `cli-binding` | Shell tool that queries the local Sentinel. For developer composition (pipe to jq/grep) and on-machine agent loops. |
+| `none-yet` | Skip bindings for now; add later. |
+
+### Q4a — Does this binding need a query layer, or is the snapshot simple enough to serve directly?
+
+For simple Sentinels, a binding can read the snapshot file directly without a `src/access/query/` layer — the folder is there when needed. If the binding needs to reshape, filter, or aggregate snapshot data, wire a query function first. If it just returns the raw snapshot, wiring direct is fine.
+
+Guideline: if more than one binding would duplicate the same data-shaping logic, extract it into `src/access/query/` and have both bindings call it.
 
 ### Q5 — Does data need to leave this machine?
 

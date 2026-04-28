@@ -1,6 +1,6 @@
 {
   "name": "@appydave/appysentinel-core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "AppySentinel runtime library — Signal envelope, event bus, lifecycle, config loader, atomic write, serial queue, logger, createSentinel()",
   "type": "module",
   "main": "./dist/index.js",

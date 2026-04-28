@@ -65,13 +65,20 @@ Rule: `state` kind → one overwriting snapshot (use `snapshot-store`). `event`/
 
 ---
 
-## Three recipe categories (umbrellas)
+## Three zones
 
-- **Collect** — data flows IN. File watchers, SSH polls, HTTP webhooks, DB diffs, shell commands.
-- **Expose** — Sentinel is readable. REST API (`api-expose`), CLI tool (`cli-expose`), MCP server (`mcp-expose`).
-- **Deliver** — data flows OUT. HTTP push, Supabase, OTLP, file relay.
+- **Collect** — data flows IN. Recipes in `src/collect/`. File watchers, SSH polls, HTTP webhooks, DB diffs, shell commands.
+- **Access** — bidirectional interface layer. `src/access/` has three sub-layers:
+    - `query/`    — read logic. Pure functions over snapshots. Returns `QueryResult<T>`. No transport knowledge.
+    - `command/`  — sentinel self-management. Config changes, triggered collections, pause/resume. Never mutates observed systems.
+    - `bindings/` — thin protocol adapters. MCP, HTTP, CLI. Call `query/` or `command/`, translate to protocol.
+  Design pattern: **CQRS-lite** — Query is the read side, Command is the write side.
+  CQRS applies to Access only. Collect and Deliver are separate patterns.
+- **Deliver** — data flows OUT. Recipes in `src/deliver/`. HTTP push, Supabase, OTLP, file relay.
 
-Storage and enrichment sit between umbrellas — they process data after collection, before exposure or delivery.
+Storage and enrichment sit between zones — they process data after collection, before access or delivery.
+
+OpenTelemetry: we follow OTel conventions (signal kinds, attributes, timestamps). We do not depend on OTel libraries.
 
 ---
 
@@ -109,7 +116,7 @@ await sentinel.stop('manual');
 - **Observer-only by default** — read, never mutate the systems this Sentinel observes.
 - **File-based storage is the default** — SQLite must earn its place (query complexity, multi-reader).
 - **Recipes own their deps** — add libraries to `package.json` only when wiring a recipe that needs them.
-- **`src/main.ts` is wiring only** — no business logic in main; that belongs in `src/recipes/`.
+- **`src/main.ts` is wiring only** — no business logic in main; recipes go in `src/collect/`, `src/access/`, or `src/deliver/`.
 - **Run `bun src/main.ts` after every recipe addition** — smoke-test before moving on.
 
 ---

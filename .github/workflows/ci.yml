@@ -13,6 +13,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4.2.2
+        with:
+          # fetch-depth 0 required so the tag push step can see existing tags
+          fetch-depth: 0
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -32,3 +35,24 @@ jobs:
 
       - name: Test (cli)
         run: bun run --filter './packages/cli' test
+
+      # Auto-tag on main pushes only (not PRs).
+      # Uses the CLI package version as the repo-level tag — it is the primary
+      # user-facing package and always bumped alongside core for releases.
+      # If the tag already exists the step is a no-op.
+      - name: Auto-tag release if version is new
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./packages/cli/package.json').version")
+          TAG="v${VERSION}"
+          if git ls-remote --tags origin | grep -q "refs/tags/${TAG}$"; then
+            echo "Tag ${TAG} already exists — skipping."
+          else
+            echo "Creating tag ${TAG}"
+            git config user.name  "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag "${TAG}"
+            git push origin "${TAG}"
+          fi

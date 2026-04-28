@@ -36,8 +36,9 @@ Visualisation is a separate Viewer application that reads from the Sentinel's ex
 
 - **Headless rule**: Sentinels have no UI. Visualisation = separate Viewer app.
 - **Observer-only by default**: Sentinels read, never mutate observed systems.
-- **Three boundary umbrellas**: Collect (read from outside) / Expose (let outside read me) / Deliver (push to outside).
-- **Expose = API/CLI/MCP only** (Anthropic framework). Socket.io dropped from expose set.
+- **Three zones**: Collect (read from outside) / Access (bidirectional interface) / Deliver (push to outside).
+- **Access zone = Bindings (API/CLI/MCP) over Query + Command layers.** Bindings are thin adapters; logic belongs in `query/` or `command/`. Socket.io dropped from access set.
+- **CQRS applies within Access only** — not to Collect or Deliver.
 - **File-based storage default**: JSONL or snapshot JSON. SQLite must earn its place.
 - **Recipes own their deps**: Core ships only `pino`, `ulid`, `zod`.
 - **Recipes are generated, not in this repo**: Recipe implementations live in user projects.
@@ -52,7 +53,15 @@ Visualisation is a separate Viewer application that reads from the Sentinel's ex
 | New feature — changes what a scaffolded project contains or how the CLI behaves | **minor** (0.X.0) | Add new template file, new CLI option, new script in template package.json |
 | Breaking change — renames/removes CLI commands, changes required inputs, removes template files | **major** (X.0.0) | Rename `create-appysentinel` command, drop a required arg |
 
-**Rule**: bump `packages/cli/package.json` version before committing. The three packages version independently — CLI, core, and config each have their own version. `PUBLISHED_VERSIONS` in `packages/cli/src/scaffold.ts` tracks the npm-published versions of **core and config only** — do not sync it to the CLI version number. Tag after the commit lands on main (`git tag vX.Y.Z && git push origin vX.Y.Z`). The publish workflow fires on the tag — not on the commit.
+**Rule**: bump the relevant `package.json` version(s) before committing. The three packages version independently — CLI, core, and config each have their own version. `PUBLISHED_VERSIONS` in `packages/cli/src/scaffold.ts` tracks the npm-published versions of **core and config only** — do not sync it to the CLI version number.
+
+**Publishing flow (fully automated — no manual tag step):**
+1. Bump the relevant `package.json` version(s) and commit.
+2. Push to `main`.
+3. CI (`.github/workflows/ci.yml`) runs tests + typecheck. If they pass, it auto-creates and pushes the git tag `vX.Y.Z` based on the CLI package version — **no manual tag step**.
+4. The tag push triggers `.github/workflows/publish.yml`, which publishes all three packages. Each package step has a skip-if-already-published guard, so unchanged packages are safely skipped.
+
+The tag is **repo-level** (not per-package). CLI version drives the tag. If you push to main without bumping a version, CI detects the tag already exists and skips tagging — idempotent.
 
 ---
 
@@ -60,7 +69,7 @@ Visualisation is a separate Viewer application that reads from the Sentinel's ex
 
 - Do not add UI, admin endpoints, or mutation logic into any Sentinel primitive.
 - Do not write recipe code into `packages/core/` — primitives only.
-- Do not use old names: `mcp-interface`, `rest-interface`, `socketio-interface` are gone.
+- Do not use old names: `mcp-interface`, `rest-interface`, `socketio-interface`, `mcp-expose`, `api-expose`, `cli-expose` are gone. Use `mcp-binding`, `api-binding`, `cli-binding`.
 - Do not write recipe specs ahead of pilot need — recipes are byproducts of pilots.
 - Do not touch `packages/core/src/` without updating tests in `packages/core/test/` in lockstep.
 - Do not change `docs/` for design reasons without updating `docs/pattern-catalogue.md` alongside.

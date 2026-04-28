@@ -58,7 +58,7 @@ Updated as we go. New patterns get added when we discover them; matrix cells get
 | F5 | Internal pub/sub (SignalBus) | ✅ baked | `bus.ts` — emit / emitAndWait / on, isolated error handling |
 | F6 | Hierarchical config + reload | ✅ baked | `config.ts` — defaults → file → env, Zod-validated, SIGHUP reload, onChange |
 
-### Collect (boundary umbrella 1 — §7.1)
+### Collect (zone 1 — §7.1)
 
 | # | Pattern | Sentinel support | Notes |
 |---|---|---|---|
@@ -73,17 +73,19 @@ Updated as we go. New patterns get added when we discover them; matrix cells get
 | C10 | Ingest gesture | 🛠️ recipe | A Collect sub-category for capabilities that pull from external data sources (wearables, file feeds, external services) rather than reading machine state directly. Ingest gestures graduate faster than point-metric collectors because they represent full domains (transcripts, events, files). Example: OMI wearable transcript ingestion in AppyRadar Sentinel (`github.com/appydave/appyradar-sentinal/blob/main/src/collectors/parsers.ts`). Graduation trigger: when the domain has its own enrichment pipeline or storage needs beyond what the host sentinel should own. |
 | C9 | Snapshot capture | 🛠️ recipe | `snapshot-capture` — combine signals into structured snapshot. AppyRadar pattern. |
 
-### Expose (boundary umbrella 2 — §7.3)
+### Access (zone 2 — §7.3)
 
-Per Anthropic's API/CLI/MCP framework. Mature Sentinels ship all three.
+Per Anthropic's API/CLI/MCP framework. Mature Sentinels ship all three bindings. Each binding is a thin adapter that routes to `query/` or `command/` in `src/access/`.
 
 | # | Pattern | Sentinel support | Notes |
 |---|---|---|---|
-| E1 | API expose (HTTP) | 🛠️ recipe | `api-expose` (Hono). Foundation per Anthropic ladder. |
-| E2 | CLI expose | 🛠️ recipe | `cli-expose`. Local-first developer composition (pipe to jq / grep, on-machine agent loops). |
-| E3 | MCP expose | 🛠️ recipe | `mcp-expose`. PoC validated 2026-04-27. Design confirmed: **read-only layer over snapshot-store** — MCP server reads the snapshot file, does not touch collectors or live systems. Layering: `collector → sentinel-latest.json → MCP server → agents`. Data-age field is first-class on every response (agents need to know how fresh data is). Tool granularity: summary tool + detail tool + domain-specific aggregated tools (the aggregated tools are where MCP adds value over just reading raw JSON). One command-like tool (`trigger_collect`) is acceptable — spawns a subprocess, does not mutate machine data; observer-only invariant holds. Full spec: `appyradar-sentinal-safe/docs/mcp-surface.md`. |
+| A1 | API binding (HTTP) | 🛠️ recipe | `api-binding` (Hono). Foundation per Anthropic ladder. Thin adapter; routes to `query/` or `command/`. |
+| A2 | CLI binding | 🛠️ recipe | `cli-binding`. Local-first developer composition (pipe to jq / grep, on-machine agent loops). Thin adapter; routes to `query/`. |
+| A3 | MCP binding | 🛠️ recipe | `mcp-binding`. PoC validated 2026-04-27 (as `mcp-expose`). Design confirmed: **read-only layer over snapshot-store** — MCP server reads the snapshot file, does not touch collectors or live systems. Layering: `collector → sentinel-latest.json → MCP binding → agents`. Data-age field is first-class on every response (agents need to know how fresh data is). Tool granularity: summary tool + detail tool + domain-specific aggregated tools. One command-like tool (`trigger_collect`) is acceptable — spawns a subprocess, does not mutate machine data; observer-only invariant holds. Full spec: `appyradar-sentinal-safe/docs/mcp-surface.md`. |
+| A4 | Query layer | 🛠️ recipe | `query-layer` — `src/access/query/` convention, returns `QueryResult<T>`. Pure functions over snapshot data. No transport knowledge. Called by bindings. |
+| A5 | Command layer | 🛠️ recipe | `command-layer` — `src/access/command/` convention, sentinel-only writes. Config changes, triggered collections, pause/resume. Never mutates observed systems. |
 
-### Deliver (boundary umbrella 3 — §7.4)
+### Deliver (zone 3 — §7.4)
 
 | # | Pattern | Sentinel support | Notes |
 |---|---|---|---|
@@ -189,9 +191,9 @@ Pattern × app. `✓` = uses today; `🚧` = planned; `—` = does not / will no
 | **C8** Active MCP client | — | — | — | — |
 | **C9** Snapshot capture | ✓ | ✓ | 🚧 | — |
 | **C10** Ingest gesture | — | ✓ (OMI) | — | — |
-| **E1** API expose | — | 🚧 | 🚧 | ✓ (legacy) |
-| **E2** CLI expose | — | ? | ? | — |
-| **E3** MCP expose | — | ✓ | 🚧 | ? |
+| **A1** API binding | — | 🚧 | 🚧 | ✓ (legacy) |
+| **A2** CLI binding | — | ? | ? | — |
+| **A3** MCP binding | — | ✓ | 🚧 | ? |
 | **D1** HTTP push | — | — | — | — |
 | **D3** Supabase push | — | ? | — | — |
 | **D6** Multi-Sentinel push-to-central | — | — | — | — |
@@ -217,8 +219,8 @@ Synthesised from pattern × app — patterns the pilots need that AppySentinel d
 1. **`orchestrator-ssh` recipe** — Design locked by PoC (2026-04-27). Compound scripts, 7 SSH/machine, signal shapes defined. Ready to formalise into AppySentinel recipe. Full spec at `appyradar-sentinal-safe/docs/orchestrator-ssh-recipe.md`.
 2. **`sql-diff-collector` recipe** — SS pilot blocks on this. **New pattern not yet in spec §7.1.** Sibling of `poll-http` / `poll-command`. Needed to formalise.
 3. **`snapshot-store` recipe** — PoC confirmed as distinct from `jsonl-store` (2026-04-27). Spec §7.2 needs updating. Convention: `snapshots/sentinel-latest.json`.
-4. **`mcp-expose` recipe** — Pattern locked by PoC (2026-04-27). Read-only over snapshot-store. Data-age field first-class. Full spec at `appyradar-sentinal-safe/docs/mcp-surface.md`.
-5. **`api-expose` recipe** — AppyRadar Sentinel needs this so the AppyRadar Viewer (Baku app, hotel-live.html, Mochaccino panels) can consume snapshots.
+4. **`mcp-binding` recipe** — Pattern locked by PoC (2026-04-27). Read-only over snapshot-store. Data-age field first-class. Full spec at `appyradar-sentinal-safe/docs/mcp-surface.md`.
+5. **`api-binding` recipe** — AppyRadar Sentinel needs this so the AppyRadar Viewer (Baku app, hotel-live.html, Mochaccino panels) can consume snapshots.
 6. **Sentinel/Viewer split guidance (F3)** — Not a recipe but an install-agent rule. Both legacy apps violate it; both pilots must enforce it. Capture as a §1 architectural commitment + install-agent prompt.
 7. **Security tier model (X4–X6)** — All three cells are 🚧 or ❓ across both pilots. Needs a spec §7.8 once we riff on it. Tailscale-default + bearer-token covers most of David's footprint.
 
@@ -234,6 +236,7 @@ What's deferred (no current pilot validates):
 
 | Date | Change |
 |------|--------|
+| 2026-04-28 | v0.2.0 vocabulary refactor: Expose → Access (zone 2). E1/E2/E3 renamed A1/A2/A3 (`api-binding`, `cli-binding`, `mcp-binding`). Added A4 query-layer, A5 command-layer. All boundary umbrella references updated to zones. |
 | 2026-04-27 | Added Capability Graduation section (three-stage lifecycle, inter-sentinel communication, ingest gesture graduation pressure). Added C10 Ingest gesture pattern. Added GitHub path reference convention. Updated C8 note to reference graduation. Updated capability matrix: AR Sentinel pilot 1 promoted from 🚧 to ✓ on F1-F6, C2, C9, C10, E3, I2, I5. AppyRadar Sentinel now has real GitHub path. |
 | 2026-04-27 | C2 / I2 / E3 updated with PoC-validated design decisions from `appyradar-sentinal-safe/`. Gap summary updated to reflect C2/I2/E3 now have locked designs. |
 | 2026-04-26 | Initial catalogue. Seeded from spec §5–§7 + AppyRadar / AngelEye forensic notes + the Collect/Expose/Deliver reframe + the Anthropic API/CLI/MCP framing. |

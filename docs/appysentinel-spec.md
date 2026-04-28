@@ -8,7 +8,7 @@
 
 ## 1. What AppySentinel Is
 
-AppySentinel is a **single-host, observer-only, always-on local data coordinator boilerplate**. A Sentinel runs on one host. It **collects** data from local sources and from remote machines via collectors like `orchestrator-ssh` — it does not need to be installed on every machine it observes. It normalises data into a common envelope, **exposes** it for queries (API / CLI / MCP), and **delivers** it outward to zero or more downstream systems. It runs standalone by default — no dashboard or central system is required for it to function.
+AppySentinel is a **single-host, observer-only, always-on local data coordinator boilerplate**. A Sentinel runs on one host. It **collects** data from local sources and from remote machines via collectors like `orchestrator-ssh` — it does not need to be installed on every machine it observes. It normalises data into a common envelope, **makes it accessible via the Access zone** (API / CLI / MCP), and **delivers** it outward to zero or more downstream systems. It runs standalone by default — no dashboard or central system is required for it to function.
 
 Running one Sentinel per observed machine is an option for advanced deployments, not a default requirement. The AppyRadar pilot demonstrates the simpler pattern: one Sentinel on one orchestrator host, collecting from five remote machines over SSH.
 
@@ -44,7 +44,7 @@ Three layers, inherited from the architecture brief but tightened by the Q1–Q8
 │  Sentinel (runs on one host)                                │
 │  • COLLECTS data from local sources                         │
 │  • Normalises into Signal envelope                          │
-│  • EXPOSES via API / CLI / MCP                              │
+│  • ACCESSES via API / CLI / MCP                              │
 │  • DELIVERS data outward                                    │
 │  • PULLS configuration inward                               │
 ├─────────────────────────────────────────────────────────────┤
@@ -57,7 +57,7 @@ Three layers, inherited from the architecture brief but tightened by the Q1–Q8
 
 Rules:
 - **Push for data, pull for config** — no inbound network connections required at the Sentinel.
-- **Observer-only** — Sentinels read, never mutate the systems they observe (unless explicitly opted-in via a future `mcp-tools` recipe).
+- **Observer-only** — Sentinels read, never mutate the systems they observe (unless explicitly opted-in via a future `mcp-tools` recipe). This is the Q-side constraint of CQRS, applied by default.
 - **Single-process per Sentinel** — multi-instance coordination is out of scope for v1.
 - **One host, one-or-more Sentinels** — each Sentinel is a discrete process with its own config and data dir. A Sentinel can collect from remote machines via collectors like `orchestrator-ssh`; it does not need to run on every machine it observes.
 
@@ -77,6 +77,7 @@ Rules:
 | Testing | Bun test runner (Vitest-compatible API; `bun test` in practice) |
 | Quality tooling | `@appydave/appysentinel-config` (ESLint + Prettier + tsconfig — `packages/config/`) |
 | Distribution | `bun build --compile` for single-binary builds |
+| OTel alignment | Conventions followed (signal kinds, attributes, timestamps); no OTel library dependency. An `otlp-push` transport recipe can translate Signal → OTLP without loss. |
 
 **Explicitly NOT in the spine** (these are recipes, not core):
 - Socket.io, REST, MCP — interface recipes
@@ -323,23 +324,23 @@ Recipes are **capability descriptions (markdown specs), not code templates**. Th
 
 All recipes live in `.claude/skills/recipe/` in the scaffolded project.
 
-### 7.0 Three umbrellas: Collect / Expose / Deliver
+### 7.0 Three zones: Collect / Access / Deliver
 
-**What is an umbrella?** An umbrella is a grouping of recipes by the direction data moves relative to the Sentinel — not by the technology used. The same HTTP server can sit under Collect (receiving a webhook) or Expose (serving a query). Role, not technology, picks the umbrella.
+Zones are named by direction of data flow. The same HTTP server can sit in different zones depending on role — receiving a webhook is Collect, serving a query is Access. Role, not technology, picks the zone.
 
 Think of the Sentinel standing in the middle. Data moves in three directions:
 
 - **Collect** (§7.1) — data flows *into* the Sentinel. It reaches out and pulls, or listens for things arriving. Event-driven (webhooks, file watchers, stdin streams) or pulse-driven (HTTP polls, SQL diffs, shell commands, SSH polls).
-- **Expose** (§7.3) — the Sentinel makes itself readable. Others come to it and pull what they need. Primarily local — Sentinels are not cloud services; the consumer is typically a local AI agent, developer tool, or dashboard on the same machine or tailnet. Three surfaces following Anthropic's API/CLI/MCP framework[^1]: `api-expose`, `cli-expose`, `mcp-expose`.
+- **Access** (§7.3) — bidirectional interface layer. The Sentinel makes itself readable and optionally accepts control commands. Primarily local — Sentinels are not cloud services; the consumer is typically a local AI agent, developer tool, or dashboard on the same machine or tailnet. Three bindings following Anthropic's API/CLI/MCP framework[^1]: `api-binding`, `cli-binding`, `mcp-binding`.
 - **Deliver** (§7.4) — data flows *outward* from the Sentinel. It pushes to downstream systems — a central aggregator, a dashboard, a cloud store, an OTLP collector. This is how multiple Sentinels feed a single control layer.
 
-**Why Expose is local-first.** Sentinels run on the host they observe. They are not internet-facing services. Expose assumes the consumer is nearby — on the same machine, or reaching over Tailscale. This is by design: a Sentinel that requires external connectivity to function is fragile in exactly the ways §2 argues against.
+**Why Access is local-first.** Sentinels run on the host they observe. They are not internet-facing services. Access assumes the consumer is nearby — on the same machine, or reaching over Tailscale. This is by design: a Sentinel that requires external connectivity to function is fragile in exactly the ways §2 argues against.
 
-Internal recipes (storage §7.2, enrichment §7.5) sit between the umbrellas — they process data after collection and before exposure or delivery. Operational recipes (runtime §7.6) and cross-cutting concerns (coordination §7.7, security — TBD) are orthogonal.
+**Access is bidirectional by design.** Query = read side; Command = write side. Command is opt-in, never default. A Sentinel should never accept remote writes unless explicitly configured to do so. The observer-only default means every Sentinel starts query-only and opts into Command deliberately. See §7.3 for the CQRS-lite pattern.
 
-**Open design decision — Expose as a control surface.** Expose is currently read-only by default: the Sentinel publishes data, consumers read it. Whether Expose should also accept writes (allowing a local agent or control layer to send commands or configuration to the Sentinel) is an open question. The direction: write/control capability belongs in the Expose umbrella as an opt-in, not a default. A Sentinel should never accept remote writes unless explicitly configured to do so.
+Internal recipes (storage §7.2, enrichment §7.5) sit between the zones — they process data after collection and before access or delivery. Operational recipes (runtime §7.6) and cross-cutting concerns (coordination §7.7, security — TBD) are orthogonal.
 
-**Open design decision — configuration pull as a fourth direction.** The architecture (§3) lists a fourth verb: `PULLS configuration inward`. A Sentinel that is part of a multi-Sentinel fleet needs to receive its configuration from a central control layer — either pushed by the controller or pulled by the Sentinel on a schedule. This does not fit cleanly under Collect (data, not control) or Expose (outward-facing). It is currently filed under coordination recipes (§7.7, `config-pull`). Whether it warrants a fourth umbrella or remains a coordination concern is unresolved.
+**Open design decision — configuration pull as a fourth direction.** The architecture (§3) lists a fourth verb: `PULLS configuration inward`. A Sentinel that is part of a multi-Sentinel fleet needs to receive its configuration from a central control layer — either pushed by the controller or pulled by the Sentinel on a schedule. This does not fit cleanly under Collect (data, not control) or Access (outward-facing interface). It is currently filed under coordination recipes (§7.7, `config-pull`). Whether it warrants a fourth zone or remains a coordination concern is unresolved.
 
 **Recipe dependencies.** Each recipe owns its own runtime libraries. Core ships a slim baseline (`pino`, `ulid`, `zod`); transport-specific libraries (chokidar, hono, MCP SDK, etc.) are pulled into the project by the install agent only when their recipe is selected. A Sentinel that doesn't watch files does not carry chokidar.
 
@@ -376,17 +377,37 @@ This choice maps directly to the Signal's `kind` field (§6): `state` kind signa
 | `sqlite-store` | Bun-native SQLite with schema migration on boot — non-default, must earn its place |
 | `memory-buffer` | in-memory ring buffer, ephemeral, configurable size |
 
-### 7.3 Expose recipes (3)
+### 7.3 Access zone
 
-Following Anthropic's API/CLI/MCP framework (see §7.0 footnote). Mature Sentinels ship all three; new ones start with whichever surface matches the primary consumer environment.
+The Access zone is the bidirectional interface layer. It is structured into three sub-layers:
+
+```
+src/access/
+├── query/      ← read logic. Pure functions over snapshot data. No transport knowledge.
+├── command/    ← write logic (opt-in). Sentinel self-management only. Observer-only invariant holds.
+└── bindings/   ← thin protocol adapters. MCP, HTTP, CLI. Call query/ or command/.
+```
+
+**Design pattern: CQRS-lite.** Query is the read side; Command is the write side. Any binding can call any query function. Any binding can call any command function. Bindings own no logic — they translate between protocol and the query/command layer. CQRS applies to Access only; Collect and Deliver are separate patterns.
+
+**What Command is (important — easy to get wrong).** Commands control the Sentinel itself. They do not reach through to observed systems.
+- ✅ `addMachine({ name, host })` — adds a machine to the fleet config
+- ✅ `triggerCollection('mary')` — fires an immediate collection cycle outside the scheduled interval
+- ✅ `reloadConfig()` — reloads the sentinel's config file without restart
+- ❌ `rebootMachine('mary')` — not a command; violates observer-only
+- ❌ `deployApp(...)` — not a command; sentinel is not a control plane for observed systems
+
+**QueryResult<T>.** All query functions return `QueryResult<T>` (exported from `@appydave/appysentinel-core`). The `data_age_ms` and `stale` fields are first-class — agents need freshness metadata to decide whether to trigger a recollect.
+
+Following Anthropic's API/CLI/MCP framework (see §7.0 footnote). Mature Sentinels ship all three bindings; new ones start with whichever surface matches the primary consumer environment.
 
 | Recipe | One-line spec |
 |--------|----------------|
-| `api-expose` | Hono HTTP API with Zod request/response and auto-generated OpenAPI. The foundation; reachable by any HTTP client. |
-| `cli-expose` | Shell tool that queries the local Sentinel. For local-first developer composition (pipe to jq, grep, etc.) and on-machine agent loops. |
-| `mcp-expose` | MCP server exposing resources / tools / prompts. Standardised, portable surface for AI agents and cross-client integrations. |
+| `api-binding` | Hono HTTP API with Zod request/response and auto-generated OpenAPI. Thin adapter; routes to `query/` or `command/`. The foundation; reachable by any HTTP client. |
+| `cli-binding` | Shell tool that queries the local Sentinel. Thin adapter; routes to `query/`. For local-first developer composition (pipe to jq, grep, etc.) and on-machine agent loops. |
+| `mcp-binding` | MCP server exposing resources / tools / prompts. Thin adapter; routes to `query/` or `command/`. Standardised, portable surface for AI agents and cross-client integrations. |
 
-Real-time push to subscribers (Socket.io / SSE) is a Viewer concern. Viewers subscribe to a Sentinel via whichever surface they prefer; they may run their own real-time fan-out on top. Not part of the boilerplate's expose set.
+Real-time push to subscribers (Socket.io / SSE) is a Viewer concern. Viewers subscribe to a Sentinel via whichever surface they prefer; they may run their own real-time fan-out on top. Not part of the boilerplate's access set.
 
 ### 7.4 Deliver recipes (5)
 
@@ -504,11 +525,11 @@ The agent is responsible for:
 └─────────────────────────────────────────────┘
 ```
 
-### 8.4 Expose surface defaults
+### 8.4 Access binding defaults
 
-During the interview, the agent asks which expose surface(s) to wire (see §7.3). Per Anthropic's API/CLI/MCP framework, mature Sentinels ship all three; new ones start with the surface that matches the primary consumer environment.
+During the interview, the agent asks which binding(s) to wire (see §7.3). Per Anthropic's API/CLI/MCP framework, mature Sentinels ship all three; new ones start with the binding that matches the primary consumer environment.
 
-The suggested default is **`mcp-expose`** for projects whose primary consumer is an AI agent. Local-first developer tooling starts with `cli-expose` and/or `api-expose`. The agent presents tradeoffs explicitly so the developer makes an informed choice rather than a default-driven one.
+The suggested default is **`mcp-binding`** for projects whose primary consumer is an AI agent. Local-first developer tooling starts with `cli-binding` and/or `api-binding`. The agent presents tradeoffs explicitly so the developer makes an informed choice rather than a default-driven one.
 
 ---
 

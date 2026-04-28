@@ -54,3 +54,5 @@ export {
   type CreateSentinelOptions,
   createSentinel,
 } from './create-sentinel.js';
+
+export { type QueryResult } from './query.js';
