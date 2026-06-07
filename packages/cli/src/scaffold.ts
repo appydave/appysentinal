@@ -29,6 +29,14 @@ export interface ScaffoldResult {
 
 const EXCLUDE_DIRS = new Set(['node_modules', 'dist', 'coverage', '.git']);
 
+// Files whose template name differs from the scaffolded name. npm strips/renames
+// files literally named `.gitignore` from published tarballs, so the template
+// stores it as `gitignore` and we restore the leading dot on copy.
+// See docs/bug-scaffold-missing-gitignore.md.
+const RENAME_ON_COPY: Record<string, string> = {
+  gitignore: '.gitignore',
+};
+
 const PLACEHOLDER_PROJECT = '{{PROJECT_NAME}}';
 
 // Versions are auto-generated from workspace package.json files by
@@ -68,12 +76,12 @@ function copyTemplate(srcRoot: string, destRoot: string): number {
     for (const entry of entries) {
       if (EXCLUDE_DIRS.has(entry.name)) continue;
       const srcPath = join(src, entry.name);
-      const destPath = join(dest, entry.name);
 
       if (entry.isDirectory()) {
-        walk(srcPath, destPath);
+        walk(srcPath, join(dest, entry.name));
       } else if (entry.isFile()) {
-        cpSync(srcPath, destPath);
+        const destName = RENAME_ON_COPY[entry.name] ?? entry.name;
+        cpSync(srcPath, join(dest, destName));
         count += 1;
       }
     }

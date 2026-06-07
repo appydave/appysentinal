@@ -99,6 +99,18 @@ describe('runScaffold', () => {
     ).toThrow('not empty');
   });
 
+  it('scaffolds a .gitignore that ignores node_modules (npm-strip regression)', async () => {
+    // npm strips files literally named `.gitignore` from published tarballs, so
+    // the template stores it as `gitignore` and the scaffolder restores the dot.
+    // See docs/bug-scaffold-missing-gitignore.md.
+    const targetDir = join(tmpDir, 'ignore-sentinel');
+    runScaffold({ projectName: 'ignore-sentinel', targetDir, templateDir: TEMPLATE_DIR, _skipInstall: true, _skipGit: true });
+    expect(existsSync(join(targetDir, '.gitignore')), '.gitignore must be scaffolded with the leading dot').toBe(true);
+    expect(existsSync(join(targetDir, 'gitignore')), 'undotted gitignore must not be left behind').toBe(false);
+    const ignore = await readFile(join(targetDir, '.gitignore'), 'utf8');
+    expect(ignore).toContain('node_modules/');
+  });
+
   it('returns correct filesWritten count', async () => {
     const targetDir = join(tmpDir, 'count-sentinel');
     const result = runScaffold({ projectName: 'count-sentinel', targetDir, templateDir: TEMPLATE_DIR, _skipInstall: true, _skipGit: true });
