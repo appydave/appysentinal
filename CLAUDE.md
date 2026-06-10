@@ -68,13 +68,13 @@ If you push to main without bumping a version, every publish step skips silently
 
 **npm token (`NPM_TOKEN` GitHub secret) — refresh every ~90 days:**
 
-The token is a granular access token on npm named `appysentinal-ci`. It expires ~90 days after creation. When it expires CI fails silently with a `404` (not an obvious "token expired" message) — see symptom below.
+The token is a granular access token on npm. Its **canonical name is `appysentinel-ci`**. ⚠️ The currently-live token may still carry the old misspelled name `appysentinal-ci` until its next rotation — the name is cosmetic (CI authenticates by *value* via the `NPM_TOKEN` secret), so recreating it with the corrected name at the next refresh fully resolves it; no emergency rotation needed. It expires ~90 days after creation. When it expires CI fails silently with a `404` (not an obvious "token expired" message) — see symptom below.
 
 **To refresh (exact steps):**
-1. npm.js.org → Account → Access Tokens → delete the old `appysentinal-ci` token
+1. npm.js.org → Account → Access Tokens → delete the previous CI token (the live one may still be named `appysentinal-ci`)
 2. Click **Generate New Token** → **Granular Access Token**
 3. Fill in:
-   - **Token name**: `appysentinal-ci`
+   - **Token name**: `appysentinel-ci`  *(corrected spelling — the old token was `appysentinal-ci`)*
    - **Bypass 2FA**: checked (required for CI)
    - **Packages and scopes → Permissions**: Read and write
    - **Select packages**: "Only select packages and scopes" → add exactly these three:
