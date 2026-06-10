@@ -717,7 +717,7 @@ Filtenberg (client presentation)." --system agentic-os --audience "Lars Filtenbe
 
 **Example 3: Regenerate Existing Gallery**
 ```
-/mochaccino-pipeline --regenerate --folder ~/dev/ad/apps/appysentinal/.mochaccino
+/mochaccino-pipeline --regenerate --folder ~/dev/ad/apps/appysentinel/.mochaccino
 ```
 
 **Output**:

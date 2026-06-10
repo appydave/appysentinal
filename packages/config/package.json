@@ -55,10 +55,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/appydave/appysentinal.git",
+    "url": "git+https://github.com/appydave/appysentinel.git",
     "directory": "packages/config"
   },
-  "homepage": "https://github.com/appydave/appysentinal#readme",
+  "homepage": "https://github.com/appydave/appysentinel#readme",
   "author": "David Cruwys",
   "license": "MIT"
 }

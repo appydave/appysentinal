@@ -1,6 +1,6 @@
 # create-appysentinel
 
-The static scaffolding CLI for [AppySentinel](https://github.com/appydave/appysentinal) — the per-machine, observer-only telemetry collector boilerplate.
+The static scaffolding CLI for [AppySentinel](https://github.com/appydave/appysentinel) — the per-machine, observer-only telemetry collector boilerplate.
 
 ## Usage
 

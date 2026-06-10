@@ -152,7 +152,7 @@ These are decisions that should be resolved *before* writing the boilerplate spe
 3. **Observer-only by design?** — AngelEye deliberately chose observer-only (read, never write). Is that a boilerplate *principle*, or just one posture among many?
 4. **Bun or Node?** — AppyRadar uses Bun, the AppyStack apps use Node. Bun is lean and TS-native. Node is safer. Picking Bun is a slight bet on the runtime's maturity.
 5. **Default interface: REST or MCP?** — Both should be recipes, but which is the *default* when you scaffold a new Sentinel? Given the target consumers (Claude, AI tooling), MCP-first makes sense.
-6. **Does AppySentinel ship a CLI (`create-appysentinal`)?** — Matching AppyStack's scaffolding model. Or does it stay template-only (copy + customise)?
+6. **Does AppySentinel ship a CLI (`create-appysentinel`)?** — Matching AppyStack's scaffolding model. Or does it stay template-only (copy + customise)?
 7. **Upgrade mechanism?** — AppyStack has `appystack-upgrade`. Does AppySentinel need the equivalent?
 8. **Is the Sentinel expected to run alongside an AppyStack dashboard, or independently?** — The brief implies they're separable. Confirm.
 

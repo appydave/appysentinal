@@ -15,7 +15,7 @@ packages/
 ## First-time setup
 
 ```bash
-cd /Users/davidcruwys/dev/ad/apps/appysentinal
+cd /Users/davidcruwys/dev/ad/apps/appysentinel
 bun install
 ```
 

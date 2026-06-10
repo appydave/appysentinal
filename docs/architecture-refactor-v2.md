@@ -101,7 +101,7 @@ export interface QueryResult<T> {
 
 ## Project 1 — AppySentinel (this repo)
 
-**Absolute path**: `/Users/davidcruwys/dev/ad/apps/appysentinal`
+**Absolute path**: `/Users/davidcruwys/dev/ad/apps/appysentinel`
 
 ### 1a. Spec (`docs/appysentinel-spec.md`)
 
@@ -197,7 +197,7 @@ Both `@appydave/appysentinel-core` and `create-appysentinel` → **0.2.0**
 ## Project 2 — AppyRadar Sentinel
 
 **Absolute path**: `/Users/davidcruwys/dev/ad/apps/appyradar-sentinal`
-**AppySentinel boilerplate**: `/Users/davidcruwys/dev/ad/apps/appysentinal`
+**AppySentinel boilerplate**: `/Users/davidcruwys/dev/ad/apps/appysentinel`
 
 **Prerequisite**: Project 1 must be published (0.2.0 on npm) before this project updates its dependency.
 
